@@ -208,12 +208,39 @@ html,body{margin:0; padding:0; background:#0d1b2e;}
 .aeb-bar .fill{height:100%; background:var(--accent); border-radius:3px; transition:width .3s;}
 .aeb-bar .w{width:52px; text-align:right; color:var(--text);}
 
+.aeb-fab{
+  position:fixed; bottom:20px; right:20px; z-index:400;
+  display:flex; align-items:center; gap:7px;
+  background:linear-gradient(135deg,#ffd166,#ffb703);
+  color:#1a1204; border:none; border-radius:30px;
+  padding:13px 18px; font-family:var(--sans); font-weight:700; font-size:13px;
+  box-shadow:0 6px 22px rgba(255,183,3,0.45);
+  cursor:pointer; transition:transform .15s, box-shadow .15s;
+}
+.aeb-fab:hover{transform:translateY(-2px); box-shadow:0 8px 26px rgba(255,183,3,0.55);}
+.aeb-fab span{white-space:nowrap;}
+
+.aeb-modal-backdrop{
+  position:fixed; inset:0; z-index:500;
+  background:rgba(5,10,20,0.72);
+  display:flex; align-items:center; justify-content:center;
+  padding:18px;
+}
+.aeb-modal-close{
+  flex:0 0 auto;
+  background:#0e2038; color:var(--text); border:1px solid var(--panel-line);
+  border-radius:50%; width:30px; height:30px; font-size:14px; cursor:pointer;
+}
+.aeb-modal-close:hover{border-color:var(--accent); color:var(--accent);}
+
 .aeb-custom{
   background:var(--panel);
   border:1px solid var(--panel-line);
-  border-radius:8px;
-  padding:12px;
+  border-radius:10px;
+  padding:14px;
   display:flex; flex-direction:column; gap:10px;
+  max-width:780px; width:100%; max-height:92vh; overflow-y:auto;
+  box-shadow:0 24px 70px rgba(0,0,0,0.55);
 }
 .aeb-custom-head{display:flex; align-items:center; flex-wrap:wrap; gap:10px;}
 .aeb-custom-head .h{
@@ -248,11 +275,21 @@ html,body{margin:0; padding:0; background:#0d1b2e;}
 .aeb-custom-group{
   grid-column:1/-1;
   font-family:var(--mono); font-size:10px; color:var(--accent);
-  letter-spacing:1px; margin-top:6px; border-top:1px solid var(--panel-line); padding-top:4px;
+  letter-spacing:1px; margin-top:6px; border-top:1px solid var(--panel-line); padding:5px 6px 4px;
+  cursor:pointer; border-radius:4px; transition:background .15s;
 }
-.aeb-custom-group:first-child{margin-top:0; border-top:none; padding-top:0;}
-.aeb-crow{display:flex; align-items:center; gap:6px; font-family:var(--mono); font-size:10px; color:var(--text-muted);}
-.aeb-crow label{width:56px; flex:0 0 56px;}
+.aeb-custom-group:first-child{margin-top:0; border-top:none;}
+.aeb-custom-group:hover{background:rgba(255,183,3,0.08);}
+.aeb-custom-group.pinned{background:rgba(255,242,117,0.16); color:#fff275;}
+.aeb-custom-group::after{content:' 👆タップで固定表示'; font-size:8.5px; color:var(--text-muted); letter-spacing:0;}
+.aeb-custom-group.pinned::after{content:' 👆固定中（もう一度タップで解除）'; color:#fff275; opacity:.8;}
+.aeb-crow{
+  display:flex; align-items:center; gap:6px; font-family:var(--mono); font-size:10px; color:var(--text-muted);
+  cursor:pointer; border-radius:4px; padding:2px 4px; transition:background .15s;
+}
+.aeb-crow:hover{background:rgba(255,183,3,0.06);}
+.aeb-crow.pinned{background:rgba(255,242,117,0.12);}
+.aeb-crow label{width:56px; flex:0 0 56px; pointer-events:none;}
 .aeb-crow input[type=range]{
   flex:1; -webkit-appearance:none; appearance:none; height:4px; border-radius:2px;
   background:#0a1728; outline:none; cursor:pointer;
@@ -264,7 +301,7 @@ html,body{margin:0; padding:0; background:#0d1b2e;}
 .aeb-crow input[type=range]::-moz-range-thumb{
   width:12px; height:12px; border-radius:50%; background:var(--accent); cursor:pointer; border:2px solid #1a1204;
 }
-.aeb-crow .cv{width:40px; text-align:right; color:var(--text);}
+.aeb-crow .cv{width:40px; text-align:right; color:var(--text); pointer-events:none;}
 
 @media (max-width:900px){
   .aeb-main{flex-direction:column;}
@@ -303,6 +340,10 @@ html,body{margin:0; padding:0; background:#0d1b2e;}
   .aeb-crow input[type=range]::-moz-range-thumb{width:18px; height:18px;}
   .aeb-slider::-webkit-slider-thumb{width:18px; height:18px;}
   .aeb-slider::-moz-range-thumb{width:18px; height:18px;}
+  .aeb-fab{bottom:14px; right:14px; padding:12px 16px; font-size:12px;}
+  .aeb-modal-backdrop{padding:0;}
+  .aeb-custom{max-height:100vh; height:100%; border-radius:0; max-width:100%;}
+  .aeb-custom-group::after,.aeb-custom-group.pinned::after{display:block; font-size:9px; margin-top:1px;}
 }
 </style>
 </head>
@@ -325,7 +366,6 @@ html,body{margin:0; padding:0; background:#0d1b2e;}
       <button class="aeb-btn" id="aebPause">⏸ 一時停止</button>
       <button class="aeb-btn" id="aebNext">次世代 ▶</button>
       <button class="aeb-btn" id="aebRoad">🪨 でこぼこ道</button>
-      <button class="aeb-btn" id="aebCustomToggle">✏️ 自分の設計を作る</button>
       <button class="aeb-btn" id="aebReset">↺ リセット</button>
     </div>
   </div>
@@ -388,23 +428,28 @@ html,body{margin:0; padding:0; background:#0d1b2e;}
     </div>
   </div>
 
-  <div class="aeb-custom" id="aebCustom" style="display:none;">
-    <div class="aeb-custom-head">
-      <div class="h">✏️ 自分でフレームを設計する ― 個体群に投入して進化に混ぜられます</div>
+  <button class="aeb-fab" id="aebCustomToggle">✏️<span>自分で作る</span></button>
+
+  <div class="aeb-modal-backdrop" id="aebCustomBackdrop" style="display:none;">
+    <div class="aeb-custom" id="aebCustom">
+      <div class="aeb-custom-head">
+        <div class="h">✏️ 自分でフレームを設計する ― 個体群に投入して進化に混ぜられます</div>
+        <button class="aeb-modal-close" id="aebCustomClose" aria-label="閉じる">✕</button>
+      </div>
       <div class="aeb-custom-actions">
         <span class="aeb-custom-score">推定スコア <b id="aebCustomScore">-</b> / 100</span>
         <button class="aeb-btn" id="aebCopyBest">現在のベストをコピー</button>
         <button class="aeb-btn" id="aebRandomizeCustom">🎲 ランダム化</button>
         <button class="aeb-btn primary" id="aebInject">個体群に投入 ▶</button>
       </div>
-    </div>
-    <div class="aeb-custom-body">
-      <div class="aeb-custom-left">
-        <canvas class="aeb-custom-preview" id="aebCustomPreview"></canvas>
-        <div class="aeb-custom-tip">💡 右のスライダーにカーソルを合わせる（スマホはタップ）と、対応するパーツがプレビュー上で光ります</div>
-        <div class="aeb-bars" id="aebCustomBreakdown"></div>
+      <div class="aeb-custom-body">
+        <div class="aeb-custom-left">
+          <canvas class="aeb-custom-preview" id="aebCustomPreview"></canvas>
+          <div class="aeb-custom-tip">💡 右のパーツ名やスライダーをタップすると、そのパーツがプレビュー上で光ります（もう一度タップで解除）</div>
+          <div class="aeb-bars" id="aebCustomBreakdown"></div>
+        </div>
+        <div class="aeb-custom-sliders" id="aebCustomSliders"></div>
       </div>
-      <div class="aeb-custom-sliders" id="aebCustomSliders"></div>
     </div>
   </div>
 </div>
@@ -470,7 +515,7 @@ function randomGenome(){
   g.extra.topTubeThickness=rand(...EXTRA_RANGE.topTubeThickness);
   g.extra.seatStayThickness=rand(...EXTRA_RANGE.seatStayThickness);
   g.extra.stemLength=rand(...EXTRA_RANGE.stemLength);
-  g.extra.stemAngle=rand(210,330);
+  g.extra.stemAngle=(rand(-30,50)+360)%360;
   g.extra.wheelRF=rand(...EXTRA_RANGE.wheelRF);
   g.extra.wheelRR=rand(...EXTRA_RANGE.wheelRR);
   return g;
@@ -513,6 +558,7 @@ function tubeList(g){
     {a:p.headBottom,b:p.frontAxle, th:t.fork.thickness, name:'fork'},
     {a:p.seatTop,b:p.headTop, th:g.extra.topTubeThickness, name:'topTube'},
     {a:p.seatTop,b:p.rearAxle, th:g.extra.seatStayThickness, name:'seatStay'},
+    {a:p.headTop,b:p.handlebar, th:Math.max(4,t.headTube.thickness*0.75), name:'stem'},
   ];
 }
 
@@ -592,6 +638,10 @@ function scoreGenome(g){
   coherence-=p.seatTop.y<p.BB.y?250:0; // saddle must be above BB
   coherence-=p.headTop.y<p.BB.y-20?200:0; // head must be roughly above BB
   coherence-=p.handlebar.y<p.ground?150:0;
+  // the handlebar (and the rider's arms/torso with it) has to be ahead of
+  // the saddle -- otherwise the stem is pointing backward and the rider
+  // looks like they're reaching behind themselves.
+  coherence-= p.handlebar.x < p.seatTop.x-15 ? (p.seatTop.x-15-p.handlebar.x)*0.9 : 0;
   // steering clearance: the front wheel has to be able to turn without its
   // tire hitting the down tube or top tube. A frame that merely "stands
   // straight" without fouling isn't enough -- leave real clearance for the
@@ -601,6 +651,10 @@ function scoreGenome(g){
   const steerClearance=Math.min(downTubeClearance, topTubeClearance);
   const neededClearance=g.extra.wheelRF*1.25;
   coherence-= steerClearance<neededClearance ? (neededClearance-steerClearance)*1.1 : 0;
+  // the handlebar has to be somewhere a rider could actually reach forward
+  // to -- not behind the bottom bracket, and not noticeably behind the saddle
+  coherence-= p.handlebar.x<p.BB.x ? (p.BB.x-p.handlebar.x)*1.0 : 0;
+  coherence-= p.handlebar.x<(p.seatTop.x-15) ? (p.seatTop.x-15-p.handlebar.x)*0.7 : 0;
   coherence=clamp(coherence,0,100);
 
   const {weights:w, idealSeatAngle}=computeWeights();
@@ -682,10 +736,24 @@ function crossover(pa,pb){
     child.tubes[k]=cloneGenome(from==='A'?pa.tubes[k]:pb.tubes[k]);
     origin[k]=from;
   }
-  for(const k in pa.extra){
-    const from=Math.random()<0.5?'A':'B';
-    child.extra[k]=(from==='A'?pa.extra[k]:pb.extra[k]);
-  }
+  const topFrom=Math.random()<0.5?'A':'B';
+  child.extra.topTubeThickness=(topFrom==='A'?pa.extra.topTubeThickness:pb.extra.topTubeThickness);
+  origin.topTube=topFrom;
+
+  const stayFrom=Math.random()<0.5?'A':'B';
+  child.extra.seatStayThickness=(stayFrom==='A'?pa.extra.seatStayThickness:pb.extra.seatStayThickness);
+  origin.seatStay=stayFrom;
+
+  const stemFrom=Math.random()<0.5?'A':'B'; // stemLength+stemAngle inherited together from one parent
+  child.extra.stemLength=(stemFrom==='A'?pa.extra.stemLength:pb.extra.stemLength);
+  child.extra.stemAngle=(stemFrom==='A'?pa.extra.stemAngle:pb.extra.stemAngle);
+  origin.stem=stemFrom;
+
+  const wfFrom=Math.random()<0.5?'A':'B';
+  child.extra.wheelRF=(wfFrom==='A'?pa.extra.wheelRF:pb.extra.wheelRF);
+  const wrFrom=Math.random()<0.5?'A':'B';
+  child.extra.wheelRR=(wrFrom==='A'?pa.extra.wheelRR:pb.extra.wheelRR);
+
   return {genome:child, origin};
 }
 
@@ -790,24 +858,16 @@ function drawBike(ctx, ind, x, y, scale, crankAngle, opts){
     ctx.stroke();
   }
 
-  // stick figure rider (+ stem/handlebar highlight, which isn't its own tube)
+  // stick figure rider
   ctx.globalAlpha= hp ? dimAlpha : alpha;
   const avgWheelR=(g.extra.wheelRF+g.extra.wheelRR)/2;
   drawRider(ctx,p,crankAngle,opts.riderColor||'#ffdca8',avgWheelR);
-  if(hp==='stem'){
-    ctx.globalAlpha=1;
-    ctx.strokeStyle='#fff275';
-    ctx.lineWidth=6;
-    ctx.lineCap='round';
-    ctx.beginPath(); ctx.moveTo(p.headTop.x,p.headTop.y); ctx.lineTo(p.handlebar.x,p.handlebar.y); ctx.stroke();
-  }
 
   // work out where the highlighted part's label should point, in bike-space
   let labelMid=null;
   if(hp && opts.highlightLabel){
     if(hp==='wheelR') labelMid=p.rearAxle;
     else if(hp==='wheelF') labelMid=p.frontAxle;
-    else if(hp==='stem') labelMid={x:(p.headTop.x+p.handlebar.x)/2, y:(p.headTop.y+p.handlebar.y)/2};
     else { const hiTube=tubes.find(tb=>tb.name===hp); if(hiTube) labelMid={x:(hiTube.a.x+hiTube.b.x)/2, y:(hiTube.a.y+hiTube.b.y)/2}; }
   }
 
@@ -1142,15 +1202,21 @@ CUSTOM_SLIDERS.push({group:'ホイール', part:'wheelF', partLabel:'前輪', pa
 CUSTOM_SLIDERS.push({group:'ホイール', part:'wheelR', partLabel:'後輪', path:'extra.wheelRR', label:'後輪径', min:EXTRA_RANGE.wheelRR[0], max:EXTRA_RANGE.wheelRR[1], step:1, unit:''});
 
 let highlightPart=null, highlightLabel=null;
-function setHighlight(part,label){
-  if(highlightPart===part) return;
-  highlightPart=part; highlightLabel=label;
+let hoverPart=null, pinnedPart=null, pinnedLabel=null;
+function renderHighlightState(){
+  highlightPart = hoverPart || pinnedPart;
+  highlightLabel = hoverPart ? CUSTOM_SLIDERS.find(d=>d.part===hoverPart)?.partLabel : pinnedLabel;
   renderCustomPreview();
+  document.querySelectorAll('#aebCustomSliders .aeb-custom-group, #aebCustomSliders .aeb-crow').forEach(el=>{
+    el.classList.toggle('pinned', el.dataset.part===pinnedPart);
+  });
 }
-function clearHighlight(){
-  if(!highlightPart) return;
-  highlightPart=null; highlightLabel=null;
-  renderCustomPreview();
+function hoverHighlight(part){ hoverPart=part; renderHighlightState(); }
+function unhoverHighlight(){ hoverPart=null; renderHighlightState(); }
+function togglePin(part,label){
+  pinnedPart = (pinnedPart===part) ? null : part;
+  pinnedLabel = pinnedPart ? label : null;
+  renderHighlightState();
 }
 
 function buildCustomSliders(){
@@ -1162,6 +1228,8 @@ function buildCustomSliders(){
       const gh=document.createElement('div');
       gh.className='aeb-custom-group';
       gh.textContent=def.group;
+      gh.dataset.part=def.part;
+      gh.addEventListener('click',()=>togglePin(def.part,def.partLabel));
       container.appendChild(gh);
       lastGroup=def.group;
     }
@@ -1181,15 +1249,15 @@ function buildCustomSliders(){
       renderCustomPreview();
     });
   });
-  // hovering (mouse) or focusing (keyboard/touch-tap) any slider in a row
-  // highlights that exact part on the preview, so a beginner can see at a
-  // glance which physical piece "チェーンステー" etc actually refers to
+  // Mouse hover gives a quick preview (desktop). Tapping/clicking a row or
+  // its group header PINS the highlight so it stays on -- this is what
+  // actually works on a phone, where there's no hover at all.
   container.querySelectorAll('.aeb-crow').forEach(row=>{
     const part=row.dataset.part, label=row.dataset.partLabel;
-    row.addEventListener('mouseenter',()=>setHighlight(part,label));
-    row.addEventListener('mouseleave',()=>clearHighlight());
-    row.querySelector('input').addEventListener('focus',()=>setHighlight(part,label));
-    row.querySelector('input').addEventListener('blur',()=>clearHighlight());
+    row.addEventListener('mouseenter',()=>hoverHighlight(part));
+    row.addEventListener('mouseleave',()=>unhoverHighlight());
+    row.addEventListener('click',(e)=>{ if(e.target.tagName!=='INPUT') togglePin(part,label); });
+    row.querySelector('input').addEventListener('pointerdown',()=>togglePin(part,label));
   });
 }
 
@@ -1254,11 +1322,20 @@ function renderCustomPreview(){
   prevCustomSubs=allSubs;
 }
 
-document.getElementById('aebCustomToggle').addEventListener('click',()=>{
-  const panel=document.getElementById('aebCustom');
-  const show=panel.style.display==='none';
-  panel.style.display=show?'flex':'none';
-  if(show) renderCustomPreview();
+function openCustomModal(){
+  document.getElementById('aebCustomBackdrop').style.display='flex';
+  renderCustomPreview();
+}
+function closeCustomModal(){
+  document.getElementById('aebCustomBackdrop').style.display='none';
+}
+document.getElementById('aebCustomToggle').addEventListener('click', openCustomModal);
+document.getElementById('aebCustomClose').addEventListener('click', closeCustomModal);
+document.getElementById('aebCustomBackdrop').addEventListener('click',(e)=>{
+  if(e.target.id==='aebCustomBackdrop') closeCustomModal(); // click outside the card
+});
+document.addEventListener('keydown',(e)=>{
+  if(e.key==='Escape' && document.getElementById('aebCustomBackdrop').style.display!=='none') closeCustomModal();
 });
 document.getElementById('aebCopyBest').addEventListener('click',()=>{
   customGenome=cloneGenome(population[0].genome);
@@ -1288,6 +1365,7 @@ document.getElementById('aebInject').addEventListener('click',()=>{
     paused=false;
     document.getElementById('aebPause').textContent='⏸ 一時停止';
   }
+  closeCustomModal();
   raceCanvas.scrollIntoView({behavior:'smooth', block:'center'});
 
   const btn=document.getElementById('aebInject');
@@ -1323,7 +1401,7 @@ function syncEmphasisUI(){
 function onEmphasisChange(){
   evaluateAll();
   updateTopStats();
-  if(document.getElementById('aebCustom').style.display!=='none') renderCustomPreview();
+  if(document.getElementById('aebCustomBackdrop').style.display!=='none') renderCustomPreview();
 }
 document.getElementById('aebEmphSpeed').addEventListener('input',(e)=>{emphasis.speed=parseFloat(e.target.value); document.getElementById('aebEmphSpeedVal').textContent=e.target.value; onEmphasisChange();});
 document.getElementById('aebEmphComfort').addEventListener('input',(e)=>{emphasis.comfort=parseFloat(e.target.value); document.getElementById('aebEmphComfortVal').textContent=e.target.value; onEmphasisChange();});
