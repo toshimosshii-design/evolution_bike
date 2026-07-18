@@ -1,10 +1,9 @@
-<html>
+<!DOCTYPE html>
+<html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-</head>
-
-<!-- AI Evolution Bike -->
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>AI Evolution Bike</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap');
 
@@ -24,6 +23,7 @@
   --sans:'Inter', system-ui, sans-serif;
 }
 *{box-sizing:border-box;}
+html,body{margin:0; padding:0; background:#0d1b2e;}
 .aeb-root{
   font-family:var(--sans);
   background:
@@ -305,6 +305,8 @@
   .aeb-slider::-moz-range-thumb{width:18px; height:18px;}
 }
 </style>
+</head>
+<body>
 
 <div class="aeb-root">
   <div class="aeb-topbar">
@@ -419,6 +421,14 @@ function lerp(a,b,t){return a+(b-a)*t;}
 function norm(v,min,max,invert){let t=clamp((v-min)/(max-min),0,1); return (invert?1-t:t)*100;}
 function polar(len,angDeg){const a=angDeg*Math.PI/180; return {x:len*Math.cos(a), y:len*Math.sin(a)};}
 function dist(a,b){return Math.hypot(a.x-b.x,a.y-b.y);}
+function pointToSegmentDist(p,a,b){
+  const abx=b.x-a.x, aby=b.y-a.y;
+  const len2=abx*abx+aby*aby;
+  let t=len2>0 ? ((p.x-a.x)*abx+(p.y-a.y)*aby)/len2 : 0;
+  t=clamp(t,0,1);
+  const cx=a.x+abx*t, cy=a.y+aby*t;
+  return Math.hypot(p.x-cx,p.y-cy);
+}
 
 // ---------- gene spec ----------
 // tube key -> [lenMin,lenMax, thickMin,thickMax]
@@ -582,6 +592,15 @@ function scoreGenome(g){
   coherence-=p.seatTop.y<p.BB.y?250:0; // saddle must be above BB
   coherence-=p.headTop.y<p.BB.y-20?200:0; // head must be roughly above BB
   coherence-=p.handlebar.y<p.ground?150:0;
+  // steering clearance: the front wheel has to be able to turn without its
+  // tire hitting the down tube or top tube. A frame that merely "stands
+  // straight" without fouling isn't enough -- leave real clearance for the
+  // wheel to swing through a turn.
+  const downTubeClearance=pointToSegmentDist(p.frontAxle, p.BB, p.headBottom);
+  const topTubeClearance=pointToSegmentDist(p.frontAxle, p.seatTop, p.headTop);
+  const steerClearance=Math.min(downTubeClearance, topTubeClearance);
+  const neededClearance=g.extra.wheelRF*1.25;
+  coherence-= steerClearance<neededClearance ? (neededClearance-steerClearance)*1.1 : 0;
   coherence=clamp(coherence,0,100);
 
   const {weights:w, idealSeatAngle}=computeWeights();
@@ -1367,3 +1386,6 @@ window.addEventListener('resize',()=>{fitCanvas(raceCanvas); fitCanvas(bestCanva
 
 })();
 </script>
+
+</body>
+</html>
