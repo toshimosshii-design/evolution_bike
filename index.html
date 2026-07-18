@@ -1,0 +1,1363 @@
+<!-- AI Evolution Bike -->
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap');
+
+:root{
+  --bg:#0d1b2e;
+  --bg-grid:#173154;
+  --panel:#122540;
+  --panel-line:#1f3f66;
+  --accent:#ffb703;
+  --parentA:#4cc9f0;
+  --parentB:#f72585;
+  --best:#06d6a0;
+  --fail:#ef476f;
+  --text:#e8eef5;
+  --text-muted:#6f8bab;
+  --mono:'JetBrains Mono', ui-monospace, 'SF Mono', monospace;
+  --sans:'Inter', system-ui, sans-serif;
+}
+*{box-sizing:border-box;}
+.aeb-root{
+  font-family:var(--sans);
+  background:
+    linear-gradient(var(--bg-grid) 1px, transparent 1px) 0 0/40px 40px,
+    linear-gradient(90deg, var(--bg-grid) 1px, transparent 1px) 0 0/40px 40px,
+    var(--bg);
+  color:var(--text);
+  border-radius:10px;
+  padding:14px;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  min-height:640px;
+  user-select:none;
+}
+.aeb-topbar{
+  display:flex;
+  align-items:center;
+  gap:18px;
+  flex-wrap:wrap;
+  background:var(--panel);
+  border:1px solid var(--panel-line);
+  border-radius:8px;
+  padding:10px 16px;
+}
+.aeb-brand{
+  font-family:var(--mono);
+  font-weight:700;
+  letter-spacing:.5px;
+  color:var(--accent);
+  font-size:13px;
+  white-space:nowrap;
+}
+.aeb-brand span{color:var(--text-muted); font-weight:400;}
+.aeb-stat{
+  font-family:var(--mono);
+  font-size:11px;
+  color:var(--text-muted);
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+  min-width:64px;
+}
+.aeb-stat b{color:var(--text); font-size:15px; font-weight:600;}
+.aeb-controls{display:flex; align-items:center; gap:6px; margin-left:auto;}
+.aeb-btn{
+  font-family:var(--mono);
+  background:#0e2038;
+  color:var(--text);
+  border:1px solid var(--panel-line);
+  border-radius:6px;
+  padding:7px 12px;
+  font-size:11px;
+  cursor:pointer;
+  transition:.15s;
+}
+.aeb-btn:hover{border-color:var(--accent); color:var(--accent);}
+.aeb-btn.active{background:var(--accent); color:#1a1204; border-color:var(--accent); font-weight:700;}
+.aeb-btn.primary{background:var(--best); color:#04241a; border-color:var(--best); font-weight:700;}
+.aeb-btn.primary:hover{filter:brightness(1.1); color:#04241a;}
+
+.aeb-main{
+  display:flex;
+  gap:10px;
+  flex:1;
+}
+.aeb-racewrap{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  min-width:0;
+}
+.aeb-canvaswrap{
+  position:relative;
+  background:radial-gradient(ellipse at 50% 0%, #14294a 0%, #0d1b2e 70%);
+  border:1px solid var(--panel-line);
+  border-radius:8px;
+  overflow:hidden;
+}
+#aebRaceCanvas{display:block; width:100%; height:100%;}
+.aeb-gentag{
+  position:absolute; top:10px; left:14px;
+  font-family:var(--mono); font-size:11px; color:var(--text-muted);
+  background:rgba(13,27,46,.6); padding:4px 8px; border-radius:5px;
+  border:1px solid var(--panel-line);
+}
+.aeb-overlay{
+  position:absolute; inset:0;
+  display:flex; align-items:center; justify-content:center;
+  flex-direction:column; gap:6px;
+  background:rgba(9,17,29,0.55);
+  font-family:var(--mono);
+  color:var(--accent);
+  font-size:15px;
+  letter-spacing:1px;
+  opacity:0;
+  pointer-events:none;
+  transition:opacity .25s;
+}
+.aeb-overlay.show{opacity:1;}
+.aeb-overlay small{color:var(--text-muted); font-size:11px; letter-spacing:.5px;}
+
+.aeb-weights{
+  display:flex; gap:6px; flex-wrap:wrap; align-items:center;
+  background:var(--panel); border:1px solid var(--panel-line); border-radius:8px;
+  padding:9px 12px;
+}
+.aeb-weights .lbl{font-family:var(--mono); font-size:11px; color:var(--text-muted); margin-right:4px;}
+.aeb-slider{
+  -webkit-appearance:none; appearance:none;
+  width:110px; height:4px; border-radius:2px;
+  background:#0a1728; outline:none; cursor:pointer;
+}
+.aeb-slider::-webkit-slider-thumb{
+  -webkit-appearance:none; appearance:none;
+  width:13px; height:13px; border-radius:50%;
+  background:var(--accent); cursor:pointer; border:2px solid #1a1204;
+}
+.aeb-slider::-moz-range-thumb{
+  width:13px; height:13px; border-radius:50%;
+  background:var(--accent); cursor:pointer; border:2px solid #1a1204;
+}
+.aeb-sliderval{font-family:var(--mono); font-size:11px; color:var(--text); min-width:38px;}
+.aeb-hint{font-family:var(--sans); font-size:10.5px; color:var(--text-muted); margin-left:auto;}
+.aeb-emph{display:flex; align-items:center; gap:6px;}
+.aeb-emph label{font-family:var(--sans); font-size:11px; color:var(--text); white-space:nowrap;}
+
+.aeb-tree{
+  background:var(--panel);
+  border:1px solid var(--panel-line);
+  border-radius:8px;
+  padding:8px 10px;
+  height:118px;
+  display:flex; flex-direction:column; gap:4px;
+}
+.aeb-tree .lbl{font-family:var(--mono); font-size:10px; color:var(--text-muted); letter-spacing:1px;}
+.aeb-treescroll{
+  flex:1; display:flex; align-items:center; gap:6px; overflow-x:auto; padding-bottom:2px;
+}
+.aeb-treescroll::-webkit-scrollbar{height:6px;}
+.aeb-treescroll::-webkit-scrollbar-thumb{background:var(--panel-line); border-radius:3px;}
+.aeb-treeitem{
+  flex:0 0 auto; width:64px; height:64px;
+  background:#0e2038; border:1px solid var(--panel-line); border-radius:6px;
+  position:relative;
+}
+.aeb-treeitem canvas{width:100%; height:100%;}
+.aeb-treeitem .gnum{
+  position:absolute; bottom:1px; right:3px; font-family:var(--mono); font-size:8px; color:var(--text-muted);
+}
+.aeb-treeitem.latest{border-color:var(--best);}
+
+.aeb-side{
+  width:250px;
+  flex:0 0 250px;
+  display:flex; flex-direction:column; gap:10px;
+}
+.aeb-panel{
+  background:var(--panel);
+  border:1px solid var(--panel-line);
+  border-radius:8px;
+  padding:12px;
+}
+.aeb-panel .h{
+  font-family:var(--mono); font-size:10px; letter-spacing:1.5px; color:var(--text-muted);
+  margin-bottom:8px; text-transform:uppercase;
+}
+.aeb-bestcanvas{width:100%; height:130px; background:#0a1728; border-radius:6px; border:1px solid var(--panel-line);}
+.aeb-scoreline{display:flex; align-items:baseline; gap:8px; margin-top:8px;}
+.aeb-scoreline .val{font-family:var(--mono); font-size:30px; font-weight:700; color:var(--best);}
+.aeb-scoreline .of{font-family:var(--mono); font-size:12px; color:var(--text-muted);}
+.aeb-genlist{
+  display:grid; grid-template-columns:1fr auto; gap:3px 8px;
+  font-family:var(--mono); font-size:10px; color:var(--text-muted);
+  margin-top:6px;
+}
+.aeb-genlist .v{color:var(--text); text-align:right;}
+.aeb-bars{display:flex; flex-direction:column; gap:6px; margin-top:4px;}
+.aeb-bar{display:flex; align-items:center; gap:6px; font-family:var(--mono); font-size:10px; color:var(--text-muted);}
+.aeb-bar .track{flex:1; height:6px; background:#0a1728; border-radius:3px; overflow:hidden;}
+.aeb-bar .fill{height:100%; background:var(--accent); border-radius:3px; transition:width .3s;}
+.aeb-bar .w{width:52px; text-align:right; color:var(--text);}
+
+.aeb-custom{
+  background:var(--panel);
+  border:1px solid var(--panel-line);
+  border-radius:8px;
+  padding:12px;
+  display:flex; flex-direction:column; gap:10px;
+}
+.aeb-custom-head{display:flex; align-items:center; flex-wrap:wrap; gap:10px;}
+.aeb-custom-head .h{
+  font-family:var(--mono); font-size:11px; letter-spacing:.5px; color:var(--accent);
+  flex:1; min-width:220px;
+}
+.aeb-custom-actions{display:flex; align-items:center; gap:6px; flex-wrap:wrap;}
+.aeb-custom-score{font-family:var(--mono); font-size:11px; color:var(--text-muted); margin-right:4px;}
+.aeb-custom-score b{color:var(--best); font-size:14px;}
+.aeb-custom-body{display:flex; gap:14px; flex-wrap:wrap;}
+.aeb-custom-left{width:220px; flex:0 0 220px; display:flex; flex-direction:column; gap:8px;}
+.aeb-custom-tip{font-family:var(--sans); font-size:10.5px; color:var(--text-muted); line-height:1.4;}
+.aeb-custom-preview{
+  width:220px; height:170px;
+  background:#0a1728; border:1px solid var(--panel-line); border-radius:6px;
+}
+.aeb-bar-delta{
+  font-family:var(--mono); font-size:9px; font-weight:700; margin-left:4px;
+  padding:0 3px; border-radius:3px; transition:opacity .3s;
+}
+.aeb-bar-delta.up{color:#06d6a0; background:rgba(6,214,160,0.15);}
+.aeb-bar-delta.down{color:#ef476f; background:rgba(239,71,111,0.15);}
+.aeb-bar.flash .fill{box-shadow:0 0 0 1px var(--accent);}
+.aeb-custom-sliders{
+  flex:1; min-width:280px;
+  display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
+  gap:4px 16px;
+  max-height:220px; overflow-y:auto; padding-right:6px;
+}
+.aeb-custom-sliders::-webkit-scrollbar{width:6px;}
+.aeb-custom-sliders::-webkit-scrollbar-thumb{background:var(--panel-line); border-radius:3px;}
+.aeb-custom-group{
+  grid-column:1/-1;
+  font-family:var(--mono); font-size:10px; color:var(--accent);
+  letter-spacing:1px; margin-top:6px; border-top:1px solid var(--panel-line); padding-top:4px;
+}
+.aeb-custom-group:first-child{margin-top:0; border-top:none; padding-top:0;}
+.aeb-crow{display:flex; align-items:center; gap:6px; font-family:var(--mono); font-size:10px; color:var(--text-muted);}
+.aeb-crow label{width:56px; flex:0 0 56px;}
+.aeb-crow input[type=range]{
+  flex:1; -webkit-appearance:none; appearance:none; height:4px; border-radius:2px;
+  background:#0a1728; outline:none; cursor:pointer;
+}
+.aeb-crow input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none; appearance:none; width:12px; height:12px; border-radius:50%;
+  background:var(--accent); cursor:pointer; border:2px solid #1a1204;
+}
+.aeb-crow input[type=range]::-moz-range-thumb{
+  width:12px; height:12px; border-radius:50%; background:var(--accent); cursor:pointer; border:2px solid #1a1204;
+}
+.aeb-crow .cv{width:40px; text-align:right; color:var(--text);}
+
+@media (max-width:900px){
+  .aeb-main{flex-direction:column;}
+  .aeb-side{width:100%; flex:none; flex-direction:row; flex-wrap:wrap;}
+  .aeb-side .aeb-panel{flex:1; min-width:220px;}
+}
+
+@media (max-width:640px){
+  .aeb-root{padding:8px; gap:8px; border-radius:6px;}
+  .aeb-topbar{padding:8px 10px; gap:8px;}
+  .aeb-brand{width:100%; white-space:normal; line-height:1.4;}
+  .aeb-brand span{display:block; margin-top:2px;}
+  .aeb-stat{min-width:0; font-size:10px;}
+  .aeb-stat b{font-size:13px;}
+  .aeb-controls{
+    margin-left:0; width:100%;
+    overflow-x:auto; -webkit-overflow-scrolling:touch;
+    flex-wrap:nowrap; justify-content:flex-start;
+    padding-bottom:2px;
+  }
+  .aeb-controls .aeb-btn{flex:0 0 auto;}
+  .aeb-btn{padding:10px 13px; font-size:12px;} /* bigger tap targets */
+  .aeb-weights{padding:8px 10px; gap:8px;}
+  .aeb-hint{width:100%; margin-left:0; order:99;}
+  .aeb-slider{width:84px;}
+  .aeb-canvaswrap{height:340px;}
+  .aeb-side{flex-direction:column;}
+  .aeb-side .aeb-panel{min-width:0;}
+  .aeb-custom-body{flex-direction:column;}
+  .aeb-custom-left{width:100%; flex:none;}
+  .aeb-custom-preview{width:100%; height:170px; flex:none;}
+  .aeb-custom-sliders{min-width:0; width:100%; grid-template-columns:1fr; max-height:280px;}
+  .aeb-custom-actions{width:100%;}
+  .aeb-crow{padding:3px 0;}
+  .aeb-crow input[type=range]::-webkit-slider-thumb{width:18px; height:18px;}
+  .aeb-crow input[type=range]::-moz-range-thumb{width:18px; height:18px;}
+  .aeb-slider::-webkit-slider-thumb{width:18px; height:18px;}
+  .aeb-slider::-moz-range-thumb{width:18px; height:18px;}
+}
+</style>
+
+<div class="aeb-root">
+  <div class="aeb-topbar">
+    <div class="aeb-brand">AI EVOLUTION BIKE <span>／ 遺伝的アルゴリズムで自転車を進化させる</span></div>
+    <div class="aeb-stat">GEN <b id="aebGen">1</b></div>
+    <div class="aeb-stat">BEST <b id="aebBestScore">0.0</b></div>
+    <div class="aeb-stat">AVG <b id="aebAvgScore">0.0</b></div>
+    <div class="aeb-stat">生存率 <b id="aebSurvival">25%</b></div>
+    <div class="aeb-stat">突然変異率 <b id="aebMutRate">8%</b></div>
+    <div class="aeb-stat">FPS <b id="aebFps">60</b></div>
+    <div class="aeb-controls">
+      <button class="aeb-btn" data-speed="1">×1</button>
+      <button class="aeb-btn active" data-speed="4">×4</button>
+      <button class="aeb-btn" data-speed="25">×25</button>
+      <button class="aeb-btn" data-speed="100">×100</button>
+      <button class="aeb-btn" id="aebPause">⏸ 一時停止</button>
+      <button class="aeb-btn" id="aebNext">次世代 ▶</button>
+      <button class="aeb-btn" id="aebRoad">🪨 でこぼこ道</button>
+      <button class="aeb-btn" id="aebCustomToggle">✏️ 自分の設計を作る</button>
+      <button class="aeb-btn" id="aebReset">↺ リセット</button>
+    </div>
+  </div>
+
+  <div class="aeb-weights">
+    <span class="lbl">重視するバランス:</span>
+    <span class="aeb-emph"><label>⚡スピード</label><input type="range" id="aebEmphSpeed" min="0" max="100" value="50" class="aeb-slider"><span class="aeb-sliderval" id="aebEmphSpeedVal">50</span></span>
+    <span class="aeb-emph"><label>🛋快適さ</label><input type="range" id="aebEmphComfort" min="0" max="100" value="50" class="aeb-slider"><span class="aeb-sliderval" id="aebEmphComfortVal">50</span></span>
+    <span class="aeb-emph"><label>🛡タフさ</label><input type="range" id="aebEmphToughness" min="0" max="100" value="50" class="aeb-slider"><span class="aeb-sliderval" id="aebEmphToughnessVal">50</span></span>
+    <span class="aeb-emph"><label>🪶軽さ</label><input type="range" id="aebEmphLightness" min="0" max="100" value="50" class="aeb-slider"><span class="aeb-sliderval" id="aebEmphLightnessVal">50</span></span>
+  </div>
+  <div class="aeb-weights">
+    <span class="lbl">スタート地点:</span>
+    <button class="aeb-btn" data-preset="road">🚴 ロード風</button>
+    <button class="aeb-btn" data-preset="mountain">⛰️ MTB風</button>
+    <button class="aeb-btn" data-preset="mamachari">🧺 ママチャリ風</button>
+    <button class="aeb-btn" data-preset="cross">🚲 クロス風</button>
+    <span class="aeb-hint">スライダーの初期値をセットするだけです。そこから自由に調整できます</span>
+  </div>
+
+  <div class="aeb-weights">
+    <span class="lbl">突然変異率</span>
+    <input type="range" id="aebMutRateSlider" min="0" max="40" value="8" class="aeb-slider">
+    <span class="aeb-sliderval" id="aebMutRateVal">8%</span>
+    <span class="lbl" style="margin-left:14px;">変異の強さ</span>
+    <input type="range" id="aebMutStrengthSlider" min="10" max="300" value="100" class="aeb-slider">
+    <span class="aeb-sliderval" id="aebMutStrengthVal">1.0×</span>
+    <span class="lbl" style="margin-left:14px;">生存率（上位を残す割合）</span>
+    <input type="range" id="aebSurviveSlider" min="10" max="60" value="28" class="aeb-slider">
+    <span class="aeb-sliderval" id="aebSurviveVal">28%</span>
+    <span class="aeb-hint">形が暴走する時は変異を下げてみてください</span>
+  </div>
+
+  <div class="aeb-main">
+    <div class="aeb-racewrap">
+      <div class="aeb-canvaswrap" style="height:480px;">
+        <canvas id="aebRaceCanvas"></canvas>
+        <div class="aeb-gentag" id="aebGenTag">Generation 1 ・ 個体数 18</div>
+      </div>
+      <div class="aeb-tree">
+        <div class="lbl">EVOLUTION TREE ― 各世代のベスト個体</div>
+        <div class="aeb-treescroll" id="aebTree"></div>
+      </div>
+    </div>
+
+    <div class="aeb-side">
+      <div class="aeb-panel">
+        <div class="h">Best Individual</div>
+        <canvas class="aeb-bestcanvas" id="aebBestCanvas"></canvas>
+        <div class="aeb-scoreline"><span class="val" id="aebBestScoreBig">0.0</span><span class="of">/ 100</span></div>
+        <div class="aeb-genlist">
+          <div>登場世代</div><div class="v" id="aebBestGen">-</div>
+        </div>
+        <div class="aeb-bars" id="aebBreakdown"></div>
+      </div>
+      <div class="aeb-panel">
+        <div class="h">遺伝子 (抜粋)</div>
+        <div class="aeb-genlist" id="aebGenes"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="aeb-custom" id="aebCustom" style="display:none;">
+    <div class="aeb-custom-head">
+      <div class="h">✏️ 自分でフレームを設計する ― 個体群に投入して進化に混ぜられます</div>
+      <div class="aeb-custom-actions">
+        <span class="aeb-custom-score">推定スコア <b id="aebCustomScore">-</b> / 100</span>
+        <button class="aeb-btn" id="aebCopyBest">現在のベストをコピー</button>
+        <button class="aeb-btn" id="aebRandomizeCustom">🎲 ランダム化</button>
+        <button class="aeb-btn primary" id="aebInject">個体群に投入 ▶</button>
+      </div>
+    </div>
+    <div class="aeb-custom-body">
+      <div class="aeb-custom-left">
+        <canvas class="aeb-custom-preview" id="aebCustomPreview"></canvas>
+        <div class="aeb-custom-tip">💡 右のスライダーにカーソルを合わせる（スマホはタップ）と、対応するパーツがプレビュー上で光ります</div>
+        <div class="aeb-bars" id="aebCustomBreakdown"></div>
+      </div>
+      <div class="aeb-custom-sliders" id="aebCustomSliders"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+// ---------- utils ----------
+function rand(min,max){return min+Math.random()*(max-min);}
+function randn(){let u=1-Math.random(),v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
+function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
+function lerp(a,b,t){return a+(b-a)*t;}
+function norm(v,min,max,invert){let t=clamp((v-min)/(max-min),0,1); return (invert?1-t:t)*100;}
+function polar(len,angDeg){const a=angDeg*Math.PI/180; return {x:len*Math.cos(a), y:len*Math.sin(a)};}
+function dist(a,b){return Math.hypot(a.x-b.x,a.y-b.y);}
+
+// ---------- gene spec ----------
+// tube key -> [lenMin,lenMax, thickMin,thickMax]
+const TUBE_RANGE = {
+  chainstay:[60,220, 4,16],
+  seatTube:[80,260, 4,16],
+  downTube:[80,260, 4,16],
+  headTube:[20,120, 4,14],
+  fork:[80,260, 3,12],
+};
+const EXTRA_RANGE = {
+  topTubeThickness:[3,14],
+  seatStayThickness:[3,12],
+  stemLength:[10,70],
+  wheelRF:[40,90],
+  wheelRR:[40,90],
+};
+
+// Wide-but-sane starting angle bands per tube (degrees). Gen1 is still a mess
+// of "failed" frames -- long/short, spindly/chunky, mismatched -- but these
+// bands keep the topology roughly bike-shaped (seat above BB, head in front
+// of BB, fork pointing down-forward) instead of flipping the whole thing
+// upside down or backwards, which produced impossible riders/wheels.
+const ANGLE_INIT_RANGE = {
+  chainstay:[145,225],
+  seatTube:[60,165],
+  downTube:[20,120],
+  headTube:[40,165],
+  fork:[255,345],
+};
+
+function randomGenome(){
+  const g={tubes:{}, extra:{}};
+  for(const k in TUBE_RANGE){
+    const r=TUBE_RANGE[k];
+    const ar=ANGLE_INIT_RANGE[k];
+    g.tubes[k]={length:rand(r[0],r[1]), angle:rand(ar[0],ar[1]), thickness:rand(r[2],r[3])};
+  }
+  g.extra.topTubeThickness=rand(...EXTRA_RANGE.topTubeThickness);
+  g.extra.seatStayThickness=rand(...EXTRA_RANGE.seatStayThickness);
+  g.extra.stemLength=rand(...EXTRA_RANGE.stemLength);
+  g.extra.stemAngle=rand(210,330);
+  g.extra.wheelRF=rand(...EXTRA_RANGE.wheelRF);
+  g.extra.wheelRR=rand(...EXTRA_RANGE.wheelRR);
+  return g;
+}
+
+function cloneGenome(g){
+  return JSON.parse(JSON.stringify(g));
+}
+
+// compute frame points in bike-space (y up positive), BB at origin
+function computeFrame(g){
+  const t=g.tubes;
+  const BB={x:0,y:0};
+  let rearAxle=addv(BB, polar(t.chainstay.length, t.chainstay.angle));
+  const seatTop=addv(BB, polar(t.seatTube.length, t.seatTube.angle));
+  const headBottom=addv(BB, polar(t.downTube.length, t.downTube.angle));
+  const headTop=addv(headBottom, polar(t.headTube.length, t.headTube.angle));
+  let frontAxle=addv(headBottom, polar(t.fork.length, t.fork.angle));
+  // Both wheels must touch the same ground line: lower wheel stays put, the
+  // other is dropped/raised (vertically only) to meet it. Keeps the frame's
+  // horizontal proportions from the genes while guaranteeing a rideable stance.
+  const groundRear=rearAxle.y-g.extra.wheelRR;
+  const groundFront=frontAxle.y-g.extra.wheelRF;
+  const ground=Math.min(groundRear,groundFront);
+  rearAxle={x:rearAxle.x, y:ground+g.extra.wheelRR};
+  frontAxle={x:frontAxle.x, y:ground+g.extra.wheelRF};
+  const handlebar=addv(headTop, polar(g.extra.stemLength, g.extra.stemAngle));
+  return {BB,rearAxle,seatTop,headBottom,headTop,frontAxle,handlebar,ground};
+}
+function addv(a,b){return {x:a.x+b.x,y:a.y+b.y};}
+
+function tubeList(g){
+  const p=computeFrame(g);
+  const t=g.tubes;
+  return [
+    {a:p.BB,b:p.rearAxle, th:t.chainstay.thickness, name:'chainstay'},
+    {a:p.BB,b:p.seatTop, th:t.seatTube.thickness, name:'seatTube'},
+    {a:p.BB,b:p.headBottom, th:t.downTube.thickness, name:'downTube'},
+    {a:p.headBottom,b:p.headTop, th:t.headTube.thickness, name:'headTube'},
+    {a:p.headBottom,b:p.frontAxle, th:t.fork.thickness, name:'fork'},
+    {a:p.seatTop,b:p.headTop, th:g.extra.topTubeThickness, name:'topTube'},
+    {a:p.seatTop,b:p.rearAxle, th:g.extra.seatStayThickness, name:'seatStay'},
+  ];
+}
+
+// Bounding box of the whole rendered bike (frame + wheels + rider headroom),
+// in bike-space, relative to ground=0. Used to auto-fit each individual
+// genome to its lane/canvas instead of guessing one global scale that some
+// shapes (especially gen1 chaos) would overflow.
+function frameBBox(g){
+  const p=computeFrame(g);
+  const pts=[p.BB,p.rearAxle,p.seatTop,p.headBottom,p.headTop,p.frontAxle,p.handlebar];
+  let minX=Infinity,maxX=-Infinity,maxY=-Infinity;
+  for(const pt of pts){minX=Math.min(minX,pt.x);maxX=Math.max(maxX,pt.x);maxY=Math.max(maxY,pt.y);}
+  const wr=Math.max(g.extra.wheelRF,g.extra.wheelRR);
+  minX-=wr; maxX+=wr;
+  const minY=p.ground-2;
+  maxY+=42; // headroom for the rider's head above the highest frame point
+  return {p, minX, maxX, minY, maxY, width:(maxX-minX), height:(maxY-minY)};
+}
+
+// ---------- fitness ----------
+// Instead of a handful of discrete "vehicle types", the person directly sets
+// four emphasis sliders (0-100). These blend into a sub-score weighting AND
+// a target seat-tube angle, so dragging a slider actually pulls the
+// population toward a different silhouette (aggressive/low vs upright/slack)
+// rather than just re-ranking the same shapes. "toughness" (terrain
+// capability) only pays off once the road is actually bumpy.
+let emphasis={speed:50, comfort:50, toughness:50, lightness:50};
+
+function computeWeights(){
+  const m=v=>(v/100)*2+0.05;
+  const speedW=m(emphasis.speed), comfortW=m(emphasis.comfort), toughW=m(emphasis.toughness), lightW=m(emphasis.lightness);
+  const stabilityW=(comfortW+toughW)/2*0.9;
+  const bias=clamp(emphasis.comfort/(emphasis.comfort+emphasis.speed+1e-6),0,1);
+  const idealSeatAngle=lerp(98,122,bias);
+  // "posture" = how close the seat angle sits to its target. Both a
+  // speed-lover (target ~98°, aggressive) and a comfort-lover (target
+  // ~122°, upright) care about hitting *their* target -- so this is
+  // weighted by whichever of the two is stronger, not by speed alone.
+  const postureW=Math.max(speedW,comfortW);
+  return {
+    weights:{rigidity:toughW, lightness:lightW, power:speedW, posture:postureW, aero:speedW, stability:stabilityW, comfort:comfortW, terrain:toughW},
+    idealSeatAngle,
+  };
+}
+
+function angleDelta(a,b){ return Math.abs(((a-b+180)%360+360)%360-180); }
+
+// Real achievable range of "totalMass" given the gene bounds above, used to
+// normalize the lightness sub-score. (Getting this wrong was making every
+// reasonably-built frame score near zero on lightness -- see fix note below.)
+const MASS_MIN=1400, MASS_MAX=15500;
+
+function scoreGenome(g){
+  const p=computeFrame(g);
+  const t=g.tubes;
+  const topTubeLen=dist(p.seatTop,p.headTop);
+  const seatStayLen=dist(p.seatTop,p.rearAxle);
+  const bbHeight=p.BB.y-p.ground;
+  const wheelbase=p.frontAxle.x-p.rearAxle.x;
+  const avgWheelR=(g.extra.wheelRF+g.extra.wheelRR)/2;
+  const avgThick=Object.values(t).reduce((s,tube)=>s+tube.thickness,0)/5;
+
+  // structural coherence: only punishes shapes that don't actually close up
+  // into a rideable frame (a tube stub barely reaching, or absurdly overshooting)
+  // -- any ordinary, well-proportioned diamond frame should sail through this
+  // with zero penalty, since "looks like a normal bike" isn't a narrow target.
+  let coherence=100;
+  coherence-=topTubeLen<55?(55-topTubeLen)*0.7:0;
+  coherence-=topTubeLen>340?(topTubeLen-340)*0.25:0;
+  coherence-=seatStayLen<55?(55-seatStayLen)*0.7:0;
+  coherence-=seatStayLen>340?(seatStayLen-340)*0.25:0;
+  coherence-=wheelbase<230?(230-wheelbase)*0.5:0;
+  coherence-=wheelbase>780?(wheelbase-780)*0.3:0;
+  coherence-=wheelbase<0?400:0; // front must be ahead of rear
+  coherence-=bbHeight<35?(35-bbHeight)*0.9:0; // just enough to keep pedals off the ground
+  coherence-=bbHeight>360?(bbHeight-360)*0.5:0;
+  coherence-=p.seatTop.y<p.BB.y?250:0; // saddle must be above BB
+  coherence-=p.headTop.y<p.BB.y-20?200:0; // head must be roughly above BB
+  coherence-=p.handlebar.y<p.ground?150:0;
+  coherence=clamp(coherence,0,100);
+
+  const {weights:w, idealSeatAngle}=computeWeights();
+  const totalMass=Object.values(t).reduce((s,tube)=>s+tube.length*tube.thickness,0)+avgWheelR*6;
+  const rigidity=norm(avgThick,4,16,false);
+  const lightness=norm(totalMass,MASS_MIN,MASS_MAX,true);
+  const seatAngleDev=angleDelta(t.seatTube.angle, idealSeatAngle);
+  const bbFrac=(p.BB.x-p.rearAxle.x)/(wheelbase||1);
+  const handlebarHeight=p.handlebar.y-p.BB.y;
+  const posture=clamp(100-seatAngleDev*1.3,0,100);
+  const power=clamp(100-Math.abs(bbFrac-0.42)*180,0,100);
+  const aero=clamp(100-norm(avgThick,4,16,false)*0.5-norm(handlebarHeight,-40,220,false)*0.3-norm(avgWheelR,40,90,false)*0.3,0,100);
+  const stability=clamp(norm(wheelbase,250,750,false)*0.6+norm(bbHeight,80,340,true)*0.4,0,100);
+  const comfort=clamp(norm(t.chainstay.length,60,220,false)*0.25+norm(t.headTube.length,20,120,false)*0.25+norm(avgWheelR,40,90,false)*0.2+norm(handlebarHeight,-40,220,false)*0.3,0,100);
+  // off-road capability: big wheels, tall BB clearance, and stout tubes only
+  // actually pay off once the road is bumpy -- on smooth pavement it's just
+  // excess weight/drag, so the reward flips.
+  const capability=clamp(norm(avgWheelR,40,90,false)*0.45+norm(bbHeight,80,340,false)*0.3+norm(avgThick,4,16,false)*0.25,0,100);
+  const terrain= roadMode==='bumpy' ? capability : clamp(100-capability*0.35,0,100);
+
+  const subs={rigidity,lightness,power,posture,aero,stability,comfort,terrain};
+  let wsum=0,wtot=0;
+  for(const k in subs){wsum+=subs[k]*w[k]; wtot+=w[k];}
+  const weightedAvg=wsum/wtot;
+  const total=clamp(coherence*0.45+weightedAvg*0.55,0,100);
+  return {total,subs,coherence};
+}
+
+// ---------- population / GA ----------
+const POP_SIZE=12;
+let SURVIVE_FRAC=0.28; // fraction of the population kept as parents each generation, editable from the UI
+let MUT_RATE=0.08;      // chance per gene of mutating, editable from the UI
+let MUT_STRENGTH=1.0;   // multiplier on how big each mutation jump is
+let population=[];
+let generation=1;
+let bestEver=null;
+let bestEverGen=1;
+
+function initPopulation(){
+  population=[];
+  for(let i=0;i<POP_SIZE;i++){
+    const genome=randomGenome();
+    population.push(makeIndividual(genome));
+  }
+  generation=1;
+  bestEver=null;
+  bestEverGen=1;
+  evaluateAll();
+}
+
+function makeIndividual(genome){
+  return {
+    genome,
+    x:20, y:0, crank:rand(0,360),
+    score:0, subs:null,
+    origin:null, // per-tube parent color map for birth animation
+    birthFlash:1,
+  };
+}
+
+function evaluateAll(){
+  for(const ind of population){
+    const r=scoreGenome(ind.genome);
+    ind.score=r.total; ind.subs=r.subs;
+  }
+  population.sort((a,b)=>b.score-a.score);
+  const top=population[0];
+  if(!bestEver || top.score>bestEver.score){
+    bestEver={genome:cloneGenome(top.genome), score:top.score, subs:top.subs};
+    bestEverGen=generation;
+  }
+}
+
+function crossover(pa,pb){
+  const child={tubes:{},extra:{}};
+  const origin={};
+  for(const k in pa.tubes){
+    const from=Math.random()<0.5?'A':'B';
+    child.tubes[k]=cloneGenome(from==='A'?pa.tubes[k]:pb.tubes[k]);
+    origin[k]=from;
+  }
+  for(const k in pa.extra){
+    const from=Math.random()<0.5?'A':'B';
+    child.extra[k]=(from==='A'?pa.extra[k]:pb.extra[k]);
+  }
+  return {genome:child, origin};
+}
+
+function mutate(genome, origin){
+  const mutated={};
+  for(const k in TUBE_RANGE){
+    const r=TUBE_RANGE[k];
+    const tube=genome.tubes[k];
+    if(Math.random()<MUT_RATE){ tube.length=clamp(tube.length+randn()*(r[1]-r[0])*0.15*MUT_STRENGTH,r[0],r[1]); mutated[k]=true; }
+    if(Math.random()<MUT_RATE){ tube.angle=(tube.angle+randn()*20*MUT_STRENGTH+360)%360; mutated[k]=true; }
+    if(Math.random()<MUT_RATE){ tube.thickness=clamp(tube.thickness+randn()*(r[3]-r[2])*0.2*MUT_STRENGTH,r[2],r[3]); mutated[k]=true; }
+  }
+  if(Math.random()<MUT_RATE) genome.extra.topTubeThickness=clamp(genome.extra.topTubeThickness+randn()*2*MUT_STRENGTH,...EXTRA_RANGE.topTubeThickness);
+  if(Math.random()<MUT_RATE) genome.extra.seatStayThickness=clamp(genome.extra.seatStayThickness+randn()*2*MUT_STRENGTH,...EXTRA_RANGE.seatStayThickness);
+  if(Math.random()<MUT_RATE) genome.extra.stemLength=clamp(genome.extra.stemLength+randn()*8*MUT_STRENGTH,...EXTRA_RANGE.stemLength);
+  if(Math.random()<MUT_RATE) genome.extra.stemAngle=(genome.extra.stemAngle+randn()*25*MUT_STRENGTH+360)%360;
+  if(Math.random()<MUT_RATE) genome.extra.wheelRF=clamp(genome.extra.wheelRF+randn()*6*MUT_STRENGTH,...EXTRA_RANGE.wheelRF);
+  if(Math.random()<MUT_RATE) genome.extra.wheelRR=clamp(genome.extra.wheelRR+randn()*6*MUT_STRENGTH,...EXTRA_RANGE.wheelRR);
+  return mutated;
+}
+
+let lastGenSnapshot=null;
+const TRANSITION_MS=900;
+
+function nextGeneration(){
+  const survivorCount=Math.max(2,Math.round(POP_SIZE*SURVIVE_FRAC));
+  const survivors=population.slice(0,survivorCount);
+  lastGenSnapshot={
+    ts: performance.now(),
+    entries: population.map((ind,i)=>({score:ind.score, survived:i<survivorCount})),
+  };
+  const newPop=[];
+  // elitism: keep top 2 unchanged
+  for(let i=0;i<Math.min(2,survivors.length);i++){
+    const ind=makeIndividual(cloneGenome(survivors[i].genome));
+    ind.origin=null;
+    newPop.push(ind);
+  }
+  while(newPop.length<POP_SIZE){
+    const pa=survivors[Math.floor(Math.random()*Math.random()*survivors.length)].genome;
+    const pb=survivors[Math.floor(Math.random()*Math.random()*survivors.length)].genome;
+    const {genome,origin}=crossover(pa,pb);
+    const mutated=mutate(genome,origin);
+    const ind=makeIndividual(genome);
+    ind.origin=origin;
+    ind.mutated=mutated;
+    ind.birthFlash=1;
+    newPop.push(ind);
+  }
+  population=newPop;
+  generation++;
+  evaluateAll();
+  pushTreeSnapshot();
+}
+
+// ---------- rendering ----------
+const raceCanvas=document.getElementById('aebRaceCanvas');
+const rctx=raceCanvas.getContext('2d');
+const bestCanvas=document.getElementById('aebBestCanvas');
+const bctx=bestCanvas.getContext('2d');
+
+function fitCanvas(canvas){
+  const rect=canvas.getBoundingClientRect();
+  const dpr=window.devicePixelRatio||1;
+  canvas.width=Math.max(1,rect.width*dpr);
+  canvas.height=Math.max(1,rect.height*dpr);
+  const ctx=canvas.getContext('2d');
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+}
+
+function drawBike(ctx, ind, x, y, scale, crankAngle, opts){
+  opts=opts||{};
+  const g=ind.genome;
+  const p=computeFrame(g);
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(scale,-scale); // flip y (bike-space up = screen up)
+  ctx.translate(0,-p.ground);
+
+  const alpha=opts.alpha!==undefined?opts.alpha:1;
+  const hp=opts.highlightPart; // one of: tube name, 'wheelF', 'wheelR', 'stem'
+  const dimAlpha=alpha*0.22;
+
+  // wheels
+  const hiRear=hp==='wheelR', hiFront=hp==='wheelF';
+  ctx.globalAlpha= hp ? (hiRear?1:dimAlpha) : alpha*0.9;
+  drawWheel(ctx,p.rearAxle,g.extra.wheelRR,crankAngle*0.9, hiRear?'#fff275':opts.wheelColor, hiRear?2.6:1);
+  ctx.globalAlpha= hp ? (hiFront?1:dimAlpha) : alpha*0.9;
+  drawWheel(ctx,p.frontAxle,g.extra.wheelRF,crankAngle*0.9, hiFront?'#fff275':opts.wheelColor, hiFront?2.6:1);
+
+  // frame tubes
+  const tubes=tubeList(g);
+  for(const tube of tubes){
+    const isHi=hp && tube.name===hp;
+    ctx.globalAlpha= hp ? (isHi?1:dimAlpha) : alpha;
+    ctx.strokeStyle= isHi ? '#fff275' : (opts.frameColorFn?opts.frameColorFn(tube):(opts.frameColor||'#cdd9e8'));
+    ctx.lineWidth= isHi ? tube.th+5 : tube.th;
+    ctx.lineCap='round';
+    ctx.beginPath();
+    ctx.moveTo(tube.a.x,tube.a.y);
+    ctx.lineTo(tube.b.x,tube.b.y);
+    ctx.stroke();
+  }
+
+  // stick figure rider (+ stem/handlebar highlight, which isn't its own tube)
+  ctx.globalAlpha= hp ? dimAlpha : alpha;
+  const avgWheelR=(g.extra.wheelRF+g.extra.wheelRR)/2;
+  drawRider(ctx,p,crankAngle,opts.riderColor||'#ffdca8',avgWheelR);
+  if(hp==='stem'){
+    ctx.globalAlpha=1;
+    ctx.strokeStyle='#fff275';
+    ctx.lineWidth=6;
+    ctx.lineCap='round';
+    ctx.beginPath(); ctx.moveTo(p.headTop.x,p.headTop.y); ctx.lineTo(p.handlebar.x,p.handlebar.y); ctx.stroke();
+  }
+
+  // work out where the highlighted part's label should point, in bike-space
+  let labelMid=null;
+  if(hp && opts.highlightLabel){
+    if(hp==='wheelR') labelMid=p.rearAxle;
+    else if(hp==='wheelF') labelMid=p.frontAxle;
+    else if(hp==='stem') labelMid={x:(p.headTop.x+p.handlebar.x)/2, y:(p.headTop.y+p.handlebar.y)/2};
+    else { const hiTube=tubes.find(tb=>tb.name===hp); if(hiTube) labelMid={x:(hiTube.a.x+hiTube.b.x)/2, y:(hiTube.a.y+hiTube.b.y)/2}; }
+  }
+
+  ctx.restore();
+  ctx.globalAlpha=1;
+
+  // draw the label now, in plain canvas pixel space, so it's a real fixed
+  // size regardless of how small/large this particular bike is being drawn
+  if(labelMid){
+    const sx=x+scale*labelMid.x;
+    const sy=y-scale*(labelMid.y-p.ground)-12;
+    ctx.save();
+    ctx.font='bold 13px sans-serif';
+    ctx.textAlign='center';
+    ctx.lineWidth=3;
+    ctx.strokeStyle='rgba(10,20,35,0.9)';
+    ctx.strokeText(opts.highlightLabel, sx, sy);
+    ctx.fillStyle='#fff275';
+    ctx.fillText(opts.highlightLabel, sx, sy);
+    ctx.restore();
+  }
+}
+
+function drawWheel(ctx,center,r,angle,color,emph){
+  emph=emph||1;
+  ctx.save();
+  ctx.translate(center.x,center.y);
+  ctx.strokeStyle=color||'#7fa8d9';
+  ctx.lineWidth=Math.max(1.5,r*0.06)*emph;
+  ctx.beginPath(); ctx.arc(0,0,r,0,Math.PI*2); ctx.stroke();
+  ctx.lineWidth=Math.max(1,r*0.045)*emph;
+  for(let i=0;i<8;i++){
+    const a=(angle*Math.PI/180)+i*(Math.PI/4);
+    ctx.beginPath();
+    ctx.moveTo(0,0);
+    ctx.lineTo(Math.cos(a)*r,Math.sin(a)*r);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawRider(ctx,p,crankAngle,color,avgWheelR){
+  const BB=p.BB;
+  const crankR=clamp((avgWheelR||65)*0.34,13,28);
+  // clamp hip/shoulder so degenerate genomes (saddle near/below BB, bars
+  // behind the head) can't fold the rider into an impossible pose
+  const hipRaw=addv(p.seatTop, {x:-10,y:-6});
+  const hip={x:hipRaw.x, y:Math.max(hipRaw.y, BB.y+crankR*1.6)};
+  const shoulderRaw=addv(p.handlebar,{x:-4,y:32});
+  const shoulder={x:Math.max(shoulderRaw.x, BB.x-crankR*0.5), y:Math.max(shoulderRaw.y, hip.y+18)};
+  const head={x:shoulder.x-2, y:shoulder.y+16};
+  const a1=crankAngle*Math.PI/180;
+  const a2=a1+Math.PI;
+  const foot1=addv(BB, {x:Math.cos(a1)*crankR, y:Math.sin(a1)*crankR});
+  const foot2=addv(BB, {x:Math.cos(a2)*crankR, y:Math.sin(a2)*crankR});
+  ctx.strokeStyle=color;
+  ctx.lineWidth=3.2;
+  ctx.lineCap='round';
+  // legs (back leg first, faded)
+  drawLeg(ctx,hip,foot2,0.55);
+  drawLeg(ctx,hip,foot1,1);
+  // torso
+  ctx.globalAlpha*=1;
+  ctx.beginPath(); ctx.moveTo(hip.x,hip.y); ctx.lineTo(shoulder.x,shoulder.y); ctx.stroke();
+  // arm
+  ctx.beginPath(); ctx.moveTo(shoulder.x,shoulder.y); ctx.lineTo(p.handlebar.x,p.handlebar.y); ctx.stroke();
+  // head
+  ctx.beginPath(); ctx.arc(head.x,head.y,6.5,0,Math.PI*2); ctx.fillStyle=color; ctx.fill();
+}
+function drawLeg(ctx,hip,foot,alphaMul){
+  const prevA=ctx.globalAlpha;
+  ctx.globalAlpha=prevA*alphaMul;
+  const mid={x:(hip.x+foot.x)/2, y:(hip.y+foot.y)/2};
+  const dx=foot.x-hip.x, dy=foot.y-hip.y;
+  const len=Math.hypot(dx,dy)||1;
+  const perp={x:-dy/len, y:dx/len};
+  const bend=Math.max(0,14-len*0.05);
+  const knee={x:mid.x+perp.x*bend, y:mid.y+perp.y*bend};
+  ctx.beginPath(); ctx.moveTo(hip.x,hip.y); ctx.lineTo(knee.x,knee.y); ctx.lineTo(foot.x,foot.y); ctx.stroke();
+  ctx.globalAlpha=prevA;
+}
+
+// ---------- race loop ----------
+let speedMult=4;
+let paused=false;
+let lastTs=performance.now();
+let fpsAcc=0, fpsCount=0, fpsTimer=0;
+let heatTimer=0;
+const HEAT_DURATION=5.5; // seconds of accumulated "step" time before auto-advancing
+
+function raceLoop(ts){
+  requestAnimationFrame(raceLoop);
+  const dt=Math.min(0.05,(ts-lastTs)/1000);
+  lastTs=ts;
+  fpsAcc+=dt; fpsCount++;
+  fpsTimer+=dt;
+  if(fpsTimer>0.5){ document.getElementById('aebFps').textContent=Math.round(fpsCount/fpsAcc); fpsAcc=0;fpsCount=0;fpsTimer=0; }
+
+  if(!paused){
+    // Cap the *effective* speed used for stepping the sim. Above this, a
+    // generation's whole heat would complete in only a few rendered frames,
+    // which reads as flicker/afterimages rather than motion -- so ×100 still
+    // fast-forwards evolution, it just doesn't outrun the eye.
+    const effSpeed=Math.min(speedMult,28);
+    const step=dt*effSpeed;
+    heatTimer+=step;
+    for(const ind of population){
+      const spd=8+ind.score*1.7; // px/sec base, scaled by fitness
+      ind.x+=spd*step*0.65;
+      ind.crank=((ind.crank - spd*step*3.4)%360+360)%360;
+      if(ind.birthFlash>0) ind.birthFlash=Math.max(0,ind.birthFlash-step*0.45);
+    }
+    if(heatTimer>=HEAT_DURATION){
+      heatTimer=0;
+      triggerEvolution();
+    }
+  }
+  renderRace();
+}
+
+let roadMode='smooth'; // 'smooth' | 'bumpy'
+function bumpAt(x){
+  if(roadMode!=='bumpy') return 0;
+  return Math.sin(x*0.05)*8 + Math.sin(x*0.132+1.7)*4;
+}
+
+function renderRace(){
+  fitCanvas(raceCanvas);
+  const rect=raceCanvas.getBoundingClientRect();
+  const W=rect.width,H=rect.height;
+  rctx.clearRect(0,0,W,H);
+  const compact=W<480; // narrow phone screen: shorten labels, shrink font
+  const monoFont=getComputedStyle(document.documentElement).getPropertyValue('--mono');
+
+  const topMargin=10, bottomMargin=8;
+  const laneH=(H-topMargin-bottomMargin)/POP_SIZE;
+  const sorted=[...population].sort((a,b)=>b.score-a.score);
+
+  sorted.forEach((ind,i)=>{
+    const laneTop=topMargin+i*laneH;
+    const bbox=frameBBox(ind.genome);
+    const availW=W-(compact?26:50), availH=laneH-6;
+    const s=clamp(Math.min(availW/bbox.width, availH/bbox.height), 0.05, 0.85);
+
+    const trackW=Math.max(60, (W-(compact?20:40))-bbox.width*s);
+    const trackX=(compact?10:20)+(ind.x % trackW);
+    const drawX=trackX - bbox.minX*s; // shift so the bike's own leftmost point never clips past trackX
+    const baseY=laneTop+laneH-4; // bike's ground baseline sits near the bottom of its lane
+    const by=baseY+bumpAt(drawX);
+
+    // subtle lane divider + this lane's own (optionally bumpy) ground segment
+    rctx.strokeStyle='rgba(37,69,111,0.35)';
+    rctx.lineWidth=1;
+    rctx.beginPath(); rctx.moveTo(0,laneTop); rctx.lineTo(W,laneTop); rctx.stroke();
+    rctx.strokeStyle=roadMode==='bumpy'?'#3a6a45':'#25456f';
+    rctx.beginPath();
+    for(let gx=0;gx<=W;gx+=10){ const gy=baseY+bumpAt(gx); if(gx===0) rctx.moveTo(gx,gy); else rctx.lineTo(gx,gy); }
+    rctx.stroke();
+
+    const isBest=i===0;
+    drawBike(rctx, ind, drawX, by, s, ind.crank, {
+      frameColor: ind.isUserMade?'#ffd166':(isBest?'#06d6a0':'#8fb4dd'),
+      wheelColor: ind.isUserMade?'#ffd166':(isBest?'#06d6a0':'#5f87b8'),
+      riderColor:'#ffdca8',
+      alpha: 0.55+0.45*(ind.score/100),
+      frameColorFn: (ind.origin && ind.birthFlash>0.02) ? (tube)=> (ind.mutated&&ind.mutated[tube.name]) ? '#c8ff5c' : (ind.origin[tube.name]==='A'?'#4cc9f0':ind.origin[tube.name]==='B'?'#f72585':(isBest?'#06d6a0':'#8fb4dd')) : undefined,
+    });
+
+    // rank + score readout for the lane
+    rctx.font=(compact?'9px ':'10px ')+monoFont;
+    rctx.fillStyle=isBest?'#06d6a0':'#6f8bab';
+    const youTag=ind.isUserMade?(compact?' 👤':'  👤YOU'):'';
+    rctx.fillText(compact?`#${i+1} ${ind.score.toFixed(0)}${youTag}`:`#${i+1}  ${ind.score.toFixed(0)}${youTag}`, 3, laneTop+11);
+  });
+
+  // brief, non-blocking readout of who survived selection vs. who was
+  // eliminated, pinned to the same lane rows they just raced in
+  if(lastGenSnapshot){
+    const elapsed=performance.now()-lastGenSnapshot.ts;
+    if(elapsed<TRANSITION_MS){
+      const a=1-elapsed/TRANSITION_MS;
+      rctx.font=(compact?'10px ':'11px ')+monoFont;
+      const survivedLabel=compact?'✓':'✓ 選抜→交叉';
+      const cutLabel=compact?'✕':'✕ 淘汰';
+      const labelX=compact?(W-20):(W-90);
+      lastGenSnapshot.entries.forEach((e,i)=>{
+        const laneTop=topMargin+i*laneH;
+        rctx.save();
+        rctx.globalAlpha=a;
+        if(e.survived){
+          rctx.fillStyle='#06d6a0';
+          rctx.fillText(survivedLabel, labelX, laneTop+12);
+        } else {
+          rctx.fillStyle='#ef476f';
+          rctx.fillText(cutLabel, labelX, laneTop+12);
+          rctx.strokeStyle=`rgba(239,71,111,${0.55*a})`;
+          rctx.lineWidth=2;
+          rctx.beginPath(); rctx.moveTo(0,laneTop+laneH/2); rctx.lineTo(W,laneTop+laneH/2); rctx.stroke();
+        }
+        rctx.restore();
+      });
+    } else {
+      lastGenSnapshot=null;
+    }
+  }
+
+  // persistent legend for the birth-flash colors
+  rctx.font=(compact?'9px ':'10px ')+monoFont;
+  rctx.fillStyle='#6f8bab';
+  rctx.textAlign='right';
+  rctx.fillText(compact?'🔵A／🔴B／🟢変異／👤YOU':'🔵親A ／ 🔴親B ／ 🟢変異 ／ 👤あなたの設計', W-6, H-4);
+  rctx.textAlign='left';
+
+  document.getElementById('aebGenTag').textContent=`Generation ${generation} ・ 個体数 ${POP_SIZE} ・ ${roadMode==='bumpy'?'でこぼこ道':'舗装路'}`;
+}
+
+// ---------- best panel ----------
+function renderBestPanel(){
+  const b=population[0];
+  if(!b)return;
+  fitCanvas(bestCanvas);
+  const rect=bestCanvas.getBoundingClientRect();
+  bctx.clearRect(0,0,rect.width,rect.height);
+  const bbox=frameBBox(b.genome);
+  const scale=clamp(Math.min((rect.width-24)/bbox.width, (rect.height-16)/bbox.height), 0.05, 1.1);
+  const cx=rect.width/2 - (bbox.minX+bbox.maxX)/2*scale;
+  drawBike(bctx,b, cx, rect.height-10, scale, (-performance.now()/6)%360, {frameColor:'#06d6a0', wheelColor:'#06d6a0', riderColor:'#ffdca8', alpha:1});
+
+  document.getElementById('aebBestScoreBig').textContent=b.score.toFixed(1);
+  document.getElementById('aebBestGen').textContent='G'+bestEverGen;
+
+  const bd=document.getElementById('aebBreakdown');
+  bd.innerHTML='';
+  const labels={rigidity:'剛性',lightness:'軽量性',power:'伝達効率',posture:'姿勢(前傾/直立)',aero:'空力',stability:'安定性',comfort:'快適性',terrain:'走破性'};
+  for(const k in labels){
+    const v=b.subs[k];
+    const row=document.createElement('div');
+    row.className='aeb-bar';
+    row.innerHTML=`<span style="width:56px">${labels[k]}</span><div class="track"><div class="fill" style="width:${v}%"></div></div><span class="w">${v.toFixed(0)}</span>`;
+    bd.appendChild(row);
+  }
+
+  const gl=document.getElementById('aebGenes');
+  gl.innerHTML='';
+  const t=b.genome.tubes;
+  const rows=[
+    ['チェーンステー', `${t.chainstay.length.toFixed(0)}mm / ${t.chainstay.angle.toFixed(0)}°`],
+    ['シートチューブ', `${t.seatTube.length.toFixed(0)}mm / ${t.seatTube.angle.toFixed(0)}°`],
+    ['ダウンチューブ', `${t.downTube.length.toFixed(0)}mm / ${t.downTube.angle.toFixed(0)}°`],
+    ['ヘッドチューブ', `${t.headTube.length.toFixed(0)}mm / ${t.headTube.angle.toFixed(0)}°`],
+    ['フォーク', `${t.fork.length.toFixed(0)}mm / ${t.fork.angle.toFixed(0)}°`],
+  ];
+  for(const [k,v] of rows){
+    const d1=document.createElement('div'); d1.textContent=k;
+    const d2=document.createElement('div'); d2.className='v'; d2.textContent=v;
+    gl.appendChild(d1); gl.appendChild(d2);
+  }
+}
+
+// ---------- evolution tree ----------
+const treeEl=document.getElementById('aebTree');
+function pushTreeSnapshot(){
+  const item=document.createElement('div');
+  item.className='aeb-treeitem latest';
+  const prevLatest=treeEl.querySelector('.latest');
+  if(prevLatest) prevLatest.classList.remove('latest');
+  const c=document.createElement('canvas');
+  item.appendChild(c);
+  const gnum=document.createElement('div');
+  gnum.className='gnum'; gnum.textContent='G'+generation;
+  item.appendChild(gnum);
+  treeEl.appendChild(item);
+  requestAnimationFrame(()=>{
+    fitCanvas(c);
+    const rect=c.getBoundingClientRect();
+    const ctx=c.getContext('2d');
+    ctx.clearRect(0,0,rect.width,rect.height);
+    const genome=population[0].genome;
+    const bbox=frameBBox(genome);
+    const scale=clamp(Math.min((rect.width-8)/bbox.width, (rect.height-8)/bbox.height), 0.03, 1);
+    const cx=rect.width/2 - (bbox.minX+bbox.maxX)/2*scale;
+    const fakeInd={genome, crank:0};
+    drawBike(ctx,fakeInd, cx, rect.height-4, scale, 30, {frameColor:'#9fc9ff', wheelColor:'#6f97c8', riderColor:'#ffdca8', alpha:1});
+  });
+  treeEl.scrollLeft=treeEl.scrollWidth;
+}
+
+// ---------- evolution transition ----------
+function triggerEvolution(){
+  nextGeneration();
+  updateTopStats();
+}
+
+function updateTopStats(){
+  document.getElementById('aebGen').textContent=generation;
+  document.getElementById('aebBestScore').textContent=population[0].score.toFixed(1);
+  const avg=population.reduce((s,i)=>s+i.score,0)/population.length;
+  document.getElementById('aebAvgScore').textContent=avg.toFixed(1);
+}
+
+// ---------- custom frame designer ----------
+function getPath(obj,path){ return path.split('.').reduce((o,k)=>o[k],obj); }
+function setPath(obj,path,val){ const parts=path.split('.'); let o=obj; for(let i=0;i<parts.length-1;i++) o=o[parts[i]]; o[parts[parts.length-1]]=val; }
+
+function defaultCustomGenome(){
+  return {
+    tubes:{
+      chainstay:{length:150,angle:185,thickness:9},
+      seatTube:{length:200,angle:100,thickness:9},
+      downTube:{length:220,angle:65,thickness:9},
+      headTube:{length:70,angle:100,thickness:8},
+      fork:{length:230,angle:300,thickness:7},
+    },
+    extra:{topTubeThickness:8, seatStayThickness:6, stemLength:35, stemAngle:270, wheelRF:60, wheelRR:60},
+  };
+}
+let customGenome=defaultCustomGenome();
+
+const TUBE_LABELS={chainstay:'チェーンステー',seatTube:'シートチューブ',downTube:'ダウンチューブ',headTube:'ヘッドチューブ',fork:'フォーク'};
+const CUSTOM_SLIDERS=[];
+for(const k in TUBE_RANGE){
+  const r=TUBE_RANGE[k];
+  CUSTOM_SLIDERS.push({group:TUBE_LABELS[k], part:k, partLabel:TUBE_LABELS[k], path:`tubes.${k}.length`, label:'長さ', min:r[0], max:r[1], step:1, unit:''});
+  CUSTOM_SLIDERS.push({group:TUBE_LABELS[k], part:k, partLabel:TUBE_LABELS[k], path:`tubes.${k}.angle`, label:'角度', min:0, max:360, step:1, unit:'°'});
+  CUSTOM_SLIDERS.push({group:TUBE_LABELS[k], part:k, partLabel:TUBE_LABELS[k], path:`tubes.${k}.thickness`, label:'太さ', min:r[2], max:r[3], step:0.5, unit:''});
+}
+CUSTOM_SLIDERS.push({group:'トップチューブ', part:'topTube', partLabel:'トップチューブ', path:'extra.topTubeThickness', label:'太さ', min:EXTRA_RANGE.topTubeThickness[0], max:EXTRA_RANGE.topTubeThickness[1], step:0.5, unit:''});
+CUSTOM_SLIDERS.push({group:'シートステー', part:'seatStay', partLabel:'シートステー', path:'extra.seatStayThickness', label:'太さ', min:EXTRA_RANGE.seatStayThickness[0], max:EXTRA_RANGE.seatStayThickness[1], step:0.5, unit:''});
+CUSTOM_SLIDERS.push({group:'ステム・ハンドル', part:'stem', partLabel:'ステム', path:'extra.stemLength', label:'長さ', min:EXTRA_RANGE.stemLength[0], max:EXTRA_RANGE.stemLength[1], step:1, unit:''});
+CUSTOM_SLIDERS.push({group:'ステム・ハンドル', part:'stem', partLabel:'ステム', path:'extra.stemAngle', label:'角度', min:0, max:360, step:1, unit:'°'});
+CUSTOM_SLIDERS.push({group:'ホイール', part:'wheelF', partLabel:'前輪', path:'extra.wheelRF', label:'前輪径', min:EXTRA_RANGE.wheelRF[0], max:EXTRA_RANGE.wheelRF[1], step:1, unit:''});
+CUSTOM_SLIDERS.push({group:'ホイール', part:'wheelR', partLabel:'後輪', path:'extra.wheelRR', label:'後輪径', min:EXTRA_RANGE.wheelRR[0], max:EXTRA_RANGE.wheelRR[1], step:1, unit:''});
+
+let highlightPart=null, highlightLabel=null;
+function setHighlight(part,label){
+  if(highlightPart===part) return;
+  highlightPart=part; highlightLabel=label;
+  renderCustomPreview();
+}
+function clearHighlight(){
+  if(!highlightPart) return;
+  highlightPart=null; highlightLabel=null;
+  renderCustomPreview();
+}
+
+function buildCustomSliders(){
+  const container=document.getElementById('aebCustomSliders');
+  container.innerHTML='';
+  let lastGroup=null;
+  for(const def of CUSTOM_SLIDERS){
+    if(def.group!==lastGroup){
+      const gh=document.createElement('div');
+      gh.className='aeb-custom-group';
+      gh.textContent=def.group;
+      container.appendChild(gh);
+      lastGroup=def.group;
+    }
+    const val=getPath(customGenome,def.path);
+    const row=document.createElement('div');
+    row.className='aeb-crow';
+    row.dataset.part=def.part;
+    row.dataset.partLabel=def.partLabel;
+    row.innerHTML=`<label>${def.label}</label><input type="range" min="${def.min}" max="${def.max}" step="${def.step}" value="${val}" data-path="${def.path}" data-unit="${def.unit}"><span class="cv">${Math.round(val)}${def.unit}</span>`;
+    container.appendChild(row);
+  }
+  container.querySelectorAll('input[type=range]').forEach(inp=>{
+    inp.addEventListener('input',()=>{
+      const v=parseFloat(inp.value);
+      setPath(customGenome, inp.dataset.path, v);
+      inp.nextElementSibling.textContent=Math.round(v)+inp.dataset.unit;
+      renderCustomPreview();
+    });
+  });
+  // hovering (mouse) or focusing (keyboard/touch-tap) any slider in a row
+  // highlights that exact part on the preview, so a beginner can see at a
+  // glance which physical piece "チェーンステー" etc actually refers to
+  container.querySelectorAll('.aeb-crow').forEach(row=>{
+    const part=row.dataset.part, label=row.dataset.partLabel;
+    row.addEventListener('mouseenter',()=>setHighlight(part,label));
+    row.addEventListener('mouseleave',()=>clearHighlight());
+    row.querySelector('input').addEventListener('focus',()=>setHighlight(part,label));
+    row.querySelector('input').addEventListener('blur',()=>clearHighlight());
+  });
+}
+
+function refreshCustomSliderValues(){
+  document.querySelectorAll('#aebCustomSliders input[type=range]').forEach(inp=>{
+    const v=getPath(customGenome, inp.dataset.path);
+    inp.value=v;
+    inp.nextElementSibling.textContent=Math.round(v)+inp.dataset.unit;
+  });
+  renderCustomPreview();
+}
+
+const SUB_LABELS={rigidity:'剛性',lightness:'軽量性',power:'伝達効率',posture:'姿勢(前傾/直立)',aero:'空力',stability:'安定性',comfort:'快適性',terrain:'走破性'};
+let prevCustomSubs=null;
+let customDeltaTimers={};
+
+function renderCustomPreview(){
+  const c=document.getElementById('aebCustomPreview');
+  fitCanvas(c);
+  const rect=c.getBoundingClientRect();
+  const ctx=c.getContext('2d');
+  ctx.clearRect(0,0,rect.width,rect.height);
+  const bbox=frameBBox(customGenome);
+  const scale=clamp(Math.min((rect.width-16)/bbox.width,(rect.height-14)/bbox.height),0.05,1.2);
+  const cx=rect.width/2-(bbox.minX+bbox.maxX)/2*scale;
+  drawBike(ctx, {genome:customGenome,crank:0}, cx, rect.height-8, scale, 40, {frameColor:'#ffd166', wheelColor:'#ffd166', riderColor:'#ffdca8', alpha:1, highlightPart, highlightLabel});
+
+  const r=scoreGenome(customGenome);
+  document.getElementById('aebCustomScore').textContent=r.total.toFixed(1);
+
+  const container=document.getElementById('aebCustomBreakdown');
+  const allSubs={...r.subs, 構造:r.coherence};
+  const labels={...SUB_LABELS, 構造:'構造の整合性'};
+  if(container.children.length===0){
+    // build once, then just update in place so the delta badges can persist/fade smoothly
+    for(const k in allSubs){
+      const row=document.createElement('div');
+      row.className='aeb-bar';
+      row.dataset.key=k;
+      row.innerHTML=`<span style="width:64px">${labels[k]}</span><div class="track"><div class="fill" style="width:${allSubs[k]}%"></div></div><span class="w">${allSubs[k].toFixed(0)}</span><span class="aeb-bar-delta" style="opacity:0;"></span>`;
+      container.appendChild(row);
+    }
+  } else {
+    for(const k in allSubs){
+      const row=container.querySelector(`[data-key="${k}"]`);
+      if(!row) continue;
+      row.querySelector('.fill').style.width=allSubs[k]+'%';
+      row.querySelector('.w').textContent=allSubs[k].toFixed(0);
+      if(prevCustomSubs){
+        const delta=allSubs[k]-prevCustomSubs[k];
+        if(Math.abs(delta)>0.05){
+          const badge=row.querySelector('.aeb-bar-delta');
+          badge.textContent=(delta>0?'+':'')+delta.toFixed(1);
+          badge.className='aeb-bar-delta '+(delta>0?'up':'down');
+          badge.style.opacity=1;
+          clearTimeout(customDeltaTimers[k]);
+          customDeltaTimers[k]=setTimeout(()=>{ badge.style.opacity=0; }, 1400);
+        }
+      }
+    }
+  }
+  prevCustomSubs=allSubs;
+}
+
+document.getElementById('aebCustomToggle').addEventListener('click',()=>{
+  const panel=document.getElementById('aebCustom');
+  const show=panel.style.display==='none';
+  panel.style.display=show?'flex':'none';
+  if(show) renderCustomPreview();
+});
+document.getElementById('aebCopyBest').addEventListener('click',()=>{
+  customGenome=cloneGenome(population[0].genome);
+  refreshCustomSliderValues();
+});
+document.getElementById('aebRandomizeCustom').addEventListener('click',()=>{
+  customGenome=randomGenome();
+  refreshCustomSliderValues();
+});
+document.getElementById('aebInject').addEventListener('click',()=>{
+  let worstIdx=0;
+  for(let i=1;i<population.length;i++){ if(population[i].score<population[worstIdx].score) worstIdx=i; }
+  const ind=makeIndividual(cloneGenome(customGenome));
+  ind.isUserMade=true;
+  population[worstIdx]=ind;
+  evaluateAll();
+  updateTopStats();
+
+  // Give the new individual a full heat to actually race in -- otherwise a
+  // generation change could sweep it away just a frame or two after
+  // injection, before it ever gets a real lap.
+  heatTimer=0;
+
+  // Make sure the race is actually running and visible, since neither is
+  // guaranteed at the moment of injection.
+  if(paused){
+    paused=false;
+    document.getElementById('aebPause').textContent='⏸ 一時停止';
+  }
+  raceCanvas.scrollIntoView({behavior:'smooth', block:'center'});
+
+  const btn=document.getElementById('aebInject');
+  const orig=btn.textContent;
+  btn.textContent='投入しました ✓ ／ 上のレースを見てください';
+  setTimeout(()=>{btn.textContent=orig;},1800);
+});
+
+// ---------- controls ----------
+document.querySelectorAll('[data-speed]').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('[data-speed]').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    speedMult=parseFloat(btn.dataset.speed);
+  });
+});
+const EMPHASIS_PRESETS={
+  road:      {speed:88, comfort:18, toughness:35, lightness:85},
+  mountain:  {speed:25, comfort:62, toughness:92, lightness:28},
+  mamachari: {speed:8,  comfort:95, toughness:45, lightness:12},
+  cross:     {speed:52, comfort:55, toughness:55, lightness:55},
+};
+function syncEmphasisUI(){
+  document.getElementById('aebEmphSpeed').value=emphasis.speed;
+  document.getElementById('aebEmphSpeedVal').textContent=Math.round(emphasis.speed);
+  document.getElementById('aebEmphComfort').value=emphasis.comfort;
+  document.getElementById('aebEmphComfortVal').textContent=Math.round(emphasis.comfort);
+  document.getElementById('aebEmphToughness').value=emphasis.toughness;
+  document.getElementById('aebEmphToughnessVal').textContent=Math.round(emphasis.toughness);
+  document.getElementById('aebEmphLightness').value=emphasis.lightness;
+  document.getElementById('aebEmphLightnessVal').textContent=Math.round(emphasis.lightness);
+}
+function onEmphasisChange(){
+  evaluateAll();
+  updateTopStats();
+  if(document.getElementById('aebCustom').style.display!=='none') renderCustomPreview();
+}
+document.getElementById('aebEmphSpeed').addEventListener('input',(e)=>{emphasis.speed=parseFloat(e.target.value); document.getElementById('aebEmphSpeedVal').textContent=e.target.value; onEmphasisChange();});
+document.getElementById('aebEmphComfort').addEventListener('input',(e)=>{emphasis.comfort=parseFloat(e.target.value); document.getElementById('aebEmphComfortVal').textContent=e.target.value; onEmphasisChange();});
+document.getElementById('aebEmphToughness').addEventListener('input',(e)=>{emphasis.toughness=parseFloat(e.target.value); document.getElementById('aebEmphToughnessVal').textContent=e.target.value; onEmphasisChange();});
+document.getElementById('aebEmphLightness').addEventListener('input',(e)=>{emphasis.lightness=parseFloat(e.target.value); document.getElementById('aebEmphLightnessVal').textContent=e.target.value; onEmphasisChange();});
+document.querySelectorAll('[data-preset]').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    emphasis={...EMPHASIS_PRESETS[btn.dataset.preset]};
+    syncEmphasisUI();
+    onEmphasisChange();
+  });
+});
+document.getElementById('aebPause').addEventListener('click',(e)=>{
+  paused=!paused;
+  e.target.textContent=paused?'▶ 再開':'⏸ 一時停止';
+});
+document.getElementById('aebRoad').addEventListener('click',(e)=>{
+  roadMode = roadMode==='smooth' ? 'bumpy' : 'smooth';
+  e.target.classList.toggle('active', roadMode==='bumpy');
+  e.target.textContent = roadMode==='bumpy' ? '🪨 でこぼこ道 ON' : '🪨 でこぼこ道';
+});
+document.getElementById('aebNext').addEventListener('click',()=>{
+  heatTimer=0;
+  triggerEvolution();
+});
+document.getElementById('aebReset').addEventListener('click',()=>{
+  treeEl.innerHTML='';
+  initPopulation();
+  updateTopStats();
+  pushTreeSnapshot();
+});
+
+// ---------- boot ----------
+initPopulation();
+updateTopStats();
+pushTreeSnapshot();
+buildCustomSliders();
+document.getElementById('aebSurvival').textContent=Math.round(SURVIVE_FRAC*100)+'%';
+document.getElementById('aebMutRate').textContent=Math.round(MUT_RATE*100)+'%';
+
+document.getElementById('aebMutRateSlider').addEventListener('input',(e)=>{
+  MUT_RATE=parseFloat(e.target.value)/100;
+  document.getElementById('aebMutRateVal').textContent=e.target.value+'%';
+  document.getElementById('aebMutRate').textContent=e.target.value+'%';
+});
+document.getElementById('aebMutStrengthSlider').addEventListener('input',(e)=>{
+  MUT_STRENGTH=parseFloat(e.target.value)/100;
+  document.getElementById('aebMutStrengthVal').textContent=MUT_STRENGTH.toFixed(1)+'×';
+});
+document.getElementById('aebSurviveSlider').addEventListener('input',(e)=>{
+  SURVIVE_FRAC=parseFloat(e.target.value)/100;
+  document.getElementById('aebSurviveVal').textContent=e.target.value+'%';
+  document.getElementById('aebSurvival').textContent=e.target.value+'%';
+});
+
+requestAnimationFrame(raceLoop);
+setInterval(renderBestPanel,120);
+
+window.addEventListener('resize',()=>{fitCanvas(raceCanvas); fitCanvas(bestCanvas);});
+
+})();
+</script>
