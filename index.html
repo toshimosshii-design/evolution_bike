@@ -149,6 +149,15 @@ html,body{margin:0; padding:0; background:#0d1b2e;}
 }
 .aeb-sliderval{font-family:var(--mono); font-size:11px; color:var(--text); min-width:38px;}
 .aeb-hint{font-family:var(--sans); font-size:10.5px; color:var(--text-muted); margin-left:auto;}
+.aeb-divider{width:1px; align-self:stretch; background:var(--panel-line); margin:2px 4px;}
+.aeb-help-btn{margin-left:auto;}
+.aeb-support-btn{
+  text-decoration:none; display:inline-flex; align-items:center;
+  background:linear-gradient(135deg,#ffe08a,#ffb703); color:#1a1204; font-weight:700; border:none;
+}
+.aeb-support-btn:hover{filter:brightness(1.08); color:#1a1204;}
+.aeb-help-body{display:flex; flex-direction:column; gap:10px;}
+.aeb-help-body p{margin:0; font-family:var(--sans); font-size:13px; line-height:1.6; color:var(--text);}
 .aeb-emph{display:flex; align-items:center; gap:6px;}
 .aeb-emph label{font-family:var(--sans); font-size:11px; color:var(--text); white-space:nowrap;}
 
@@ -358,16 +367,30 @@ html,body{margin:0; padding:0; background:#0d1b2e;}
     <div class="aeb-stat">生存率 <b id="aebSurvival">25%</b></div>
     <div class="aeb-stat">突然変異率 <b id="aebMutRate">8%</b></div>
     <div class="aeb-stat">FPS <b id="aebFps">60</b></div>
-    <div class="aeb-controls">
-      <button class="aeb-btn" data-speed="1">×1</button>
-      <button class="aeb-btn active" data-speed="4">×4</button>
-      <button class="aeb-btn" data-speed="25">×25</button>
-      <button class="aeb-btn" data-speed="100">×100</button>
-      <button class="aeb-btn" id="aebPause">⏸ 一時停止</button>
-      <button class="aeb-btn" id="aebNext">次世代 ▶</button>
-      <button class="aeb-btn" id="aebRoad">🪨 でこぼこ道</button>
-      <button class="aeb-btn" id="aebReset">↺ リセット</button>
-    </div>
+    <button class="aeb-btn aeb-help-btn" id="aebHelpToggle">❓ 使い方</button>
+    <!-- ▼▼ Stripe決済リンクに差し替えてください（例: https://buy.stripe.com/xxxxxxxx） ▼▼ -->
+    <a class="aeb-btn aeb-support-btn" href="https://buy.stripe.com/6oU3co5Op7iz11y8n45sA00" target="_blank" rel="noopener noreferrer">💛 開発者を応援する</a>
+    <!-- ▲▲ ここまで ▲▲ -->
+  </div>
+
+  <div class="aeb-weights">
+    <span class="lbl">操作:</span>
+    <button class="aeb-btn" id="aebPause">⏸ 一時停止</button>
+    <button class="aeb-btn" id="aebNext">次世代 ▶</button>
+    <button class="aeb-btn" id="aebReset">↺ リセット</button>
+    <span class="aeb-divider"></span>
+    <span class="lbl">速度:</span>
+    <button class="aeb-btn" data-speed="1">×1</button>
+    <button class="aeb-btn active" data-speed="4">×4</button>
+    <button class="aeb-btn" data-speed="25">×25</button>
+    <button class="aeb-btn" data-speed="100">×100</button>
+  </div>
+
+  <div class="aeb-weights">
+    <span class="lbl">路面:</span>
+    <button class="aeb-btn active" id="aebRoadSmooth">🛣️ 舗装路</button>
+    <button class="aeb-btn" id="aebRoadBumpy">🪨 でこぼこ道</button>
+    <button class="aeb-btn" id="aebRoadMountain">⛰️ 山道</button>
   </div>
 
   <div class="aeb-weights">
@@ -449,6 +472,22 @@ html,body{margin:0; padding:0; background:#0d1b2e;}
           <div class="aeb-bars" id="aebCustomBreakdown"></div>
         </div>
         <div class="aeb-custom-sliders" id="aebCustomSliders"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="aeb-modal-backdrop" id="aebHelpBackdrop" style="display:none;">
+    <div class="aeb-custom" id="aebHelp" style="max-width:480px;">
+      <div class="aeb-custom-head">
+        <div class="h">❓ 使い方</div>
+        <button class="aeb-modal-close" id="aebHelpClose" aria-label="閉じる">✕</button>
+      </div>
+      <div class="aeb-help-body">
+        <p>🚴 何もしなくても、自転車たちが勝手に走って進化していきます。速いほどスコアが高い個体です。</p>
+        <p>⚡🛋🛡🪶 「重視するバランス」のスライダーで、スピード・快適さ・タフさ・軽さのどれを重視するか変えると、進化する形が変わります。</p>
+        <p>🛣️🪨⛰️ 「路面」を変えると、道に合った丈夫さ・車輪の大きさが有利になります。</p>
+        <p>✏️ 右下の「自分で作る」ボタンから、自分でフレームを設計して個体群に混ぜることもできます。</p>
+        <p>🐢 進化が変な方向に暴走したら、「突然変異率」「変異の強さ」を下げてみてください。</p>
       </div>
     </div>
   </div>
@@ -597,9 +636,12 @@ function computeWeights(){
   // speed-lover (target ~98°, aggressive) and a comfort-lover (target
   // ~122°, upright) care about hitting *their* target -- so this is
   // weighted by whichever of the two is stronger, not by speed alone.
-  const postureW=Math.max(speedW,comfortW);
+  // A small floor keeps basic pedaling geometry from going completely
+  // unweighted even if both sliders are dragged to zero.
+  const postureW=Math.max(speedW,comfortW,0.3);
+  const powerW=Math.max(speedW,0.3);
   return {
-    weights:{rigidity:toughW, lightness:lightW, power:speedW, posture:postureW, aero:speedW, stability:stabilityW, comfort:comfortW, terrain:toughW},
+    weights:{rigidity:toughW, lightness:lightW, power:powerW, posture:postureW, aero:speedW, stability:stabilityW, comfort:comfortW, terrain:toughW},
     idealSeatAngle,
   };
 }
@@ -638,10 +680,12 @@ function scoreGenome(g){
   coherence-=p.seatTop.y<p.BB.y?250:0; // saddle must be above BB
   coherence-=p.headTop.y<p.BB.y-20?200:0; // head must be roughly above BB
   coherence-=p.handlebar.y<p.ground?150:0;
-  // the handlebar (and the rider's arms/torso with it) has to be ahead of
-  // the saddle -- otherwise the stem is pointing backward and the rider
-  // looks like they're reaching behind themselves.
-  coherence-= p.handlebar.x < p.seatTop.x-15 ? (p.seatTop.x-15-p.handlebar.x)*0.9 : 0;
+  // the handlebar has to be somewhere a rider could actually reach forward
+  // to -- not behind the bottom bracket, and not noticeably behind the saddle
+  // (otherwise the stem points backward and the rider looks like they're
+  // reaching behind themselves).
+  coherence-= p.handlebar.x<p.BB.x ? (p.BB.x-p.handlebar.x)*1.0 : 0;
+  coherence-= p.handlebar.x<(p.seatTop.x-15) ? (p.seatTop.x-15-p.handlebar.x)*0.9 : 0;
   // steering clearance: the front wheel has to be able to turn without its
   // tire hitting the down tube or top tube. A frame that merely "stands
   // straight" without fouling isn't enough -- leave real clearance for the
@@ -651,10 +695,27 @@ function scoreGenome(g){
   const steerClearance=Math.min(downTubeClearance, topTubeClearance);
   const neededClearance=g.extra.wheelRF*1.25;
   coherence-= steerClearance<neededClearance ? (neededClearance-steerClearance)*1.1 : 0;
-  // the handlebar has to be somewhere a rider could actually reach forward
-  // to -- not behind the bottom bracket, and not noticeably behind the saddle
-  coherence-= p.handlebar.x<p.BB.x ? (p.BB.x-p.handlebar.x)*1.0 : 0;
-  coherence-= p.handlebar.x<(p.seatTop.x-15) ? (p.seatTop.x-15-p.handlebar.x)*0.7 : 0;
+  // ergonomic sanity -- a genome can satisfy every tube-closure check above
+  // and still put the rider's body in an impossible pose (legs stretched
+  // absurdly long/short to the pedals, or an impossibly long/short reach
+  // from saddle to bars). These are unweighted by the emphasis sliders so
+  // they apply no matter what the person is optimizing for.
+  const legReach=dist(p.BB,p.seatTop);
+  coherence-= legReach<90 ? (90-legReach)*0.8 : 0;
+  coherence-= legReach>360 ? (legReach-360)*0.4 : 0;
+  const cockpitReach=dist(p.seatTop,p.handlebar);
+  coherence-= cockpitReach<60 ? (60-cockpitReach)*0.8 : 0;
+  coherence-= cockpitReach>420 ? (cockpitReach-420)*0.35 : 0;
+  // keep every tube's angle within a generous but real "still looks like a
+  // bike" band, centered on where gen-1 starts. This is deliberately wide
+  // (about ±100°) so there's plenty of room to evolve toward very different
+  // silhouettes -- it only stops decades of mutation from random-walking
+  // into a shape with, say, the down tube pointing backward.
+  for(const k in ANGLE_INIT_RANGE){
+    const center=(ANGLE_INIT_RANGE[k][0]+ANGLE_INIT_RANGE[k][1])/2;
+    const dev=angleDelta(t[k].angle, center);
+    coherence-= dev>100 ? (dev-100)*0.5 : 0;
+  }
   coherence=clamp(coherence,0,100);
 
   const {weights:w, idealSeatAngle}=computeWeights();
@@ -673,7 +734,7 @@ function scoreGenome(g){
   // actually pay off once the road is bumpy -- on smooth pavement it's just
   // excess weight/drag, so the reward flips.
   const capability=clamp(norm(avgWheelR,40,90,false)*0.45+norm(bbHeight,80,340,false)*0.3+norm(avgThick,4,16,false)*0.25,0,100);
-  const terrain= roadMode==='bumpy' ? capability : clamp(100-capability*0.35,0,100);
+  const terrain= roadMode==='mountain' ? clamp(capability*1.2,0,100) : roadMode==='bumpy' ? capability : clamp(100-capability*0.35,0,100);
 
   const subs={rigidity,lightness,power,posture,aero,stability,comfort,terrain};
   let wsum=0,wtot=0;
@@ -988,10 +1049,11 @@ function raceLoop(ts){
   renderRace();
 }
 
-let roadMode='smooth'; // 'smooth' | 'bumpy'
+let roadMode='smooth'; // 'smooth' | 'bumpy' | 'mountain'
 function bumpAt(x){
-  if(roadMode!=='bumpy') return 0;
-  return Math.sin(x*0.05)*8 + Math.sin(x*0.132+1.7)*4;
+  if(roadMode==='bumpy') return Math.sin(x*0.05)*8 + Math.sin(x*0.132+1.7)*4;
+  if(roadMode==='mountain') return Math.sin(x*0.07)*17 + Math.sin(x*0.19+1.1)*9 + Math.sin(x*0.33+2.4)*4.5;
+  return 0;
 }
 
 function renderRace(){
@@ -1022,7 +1084,7 @@ function renderRace(){
     rctx.strokeStyle='rgba(37,69,111,0.35)';
     rctx.lineWidth=1;
     rctx.beginPath(); rctx.moveTo(0,laneTop); rctx.lineTo(W,laneTop); rctx.stroke();
-    rctx.strokeStyle=roadMode==='bumpy'?'#3a6a45':'#25456f';
+    rctx.strokeStyle= roadMode==='mountain'?'#6b4a2f' : roadMode==='bumpy'?'#3a6a45':'#25456f';
     rctx.beginPath();
     for(let gx=0;gx<=W;gx+=10){ const gy=baseY+bumpAt(gx); if(gx===0) rctx.moveTo(gx,gy); else rctx.lineTo(gx,gy); }
     rctx.stroke();
@@ -1081,7 +1143,8 @@ function renderRace(){
   rctx.fillText(compact?'🔵A／🔴B／🟢変異／👤YOU':'🔵親A ／ 🔴親B ／ 🟢変異 ／ 👤あなたの設計', W-6, H-4);
   rctx.textAlign='left';
 
-  document.getElementById('aebGenTag').textContent=`Generation ${generation} ・ 個体数 ${POP_SIZE} ・ ${roadMode==='bumpy'?'でこぼこ道':'舗装路'}`;
+  const roadLabel= roadMode==='mountain'?'山道' : roadMode==='bumpy'?'でこぼこ道':'舗装路';
+  document.getElementById('aebGenTag').textContent=`Generation ${generation} ・ 個体数 ${POP_SIZE} ・ ${roadLabel}`;
 }
 
 // ---------- best panel ----------
@@ -1334,8 +1397,19 @@ document.getElementById('aebCustomClose').addEventListener('click', closeCustomM
 document.getElementById('aebCustomBackdrop').addEventListener('click',(e)=>{
   if(e.target.id==='aebCustomBackdrop') closeCustomModal(); // click outside the card
 });
+
+function openHelpModal(){ document.getElementById('aebHelpBackdrop').style.display='flex'; }
+function closeHelpModal(){ document.getElementById('aebHelpBackdrop').style.display='none'; }
+document.getElementById('aebHelpToggle').addEventListener('click', openHelpModal);
+document.getElementById('aebHelpClose').addEventListener('click', closeHelpModal);
+document.getElementById('aebHelpBackdrop').addEventListener('click',(e)=>{
+  if(e.target.id==='aebHelpBackdrop') closeHelpModal();
+});
+
 document.addEventListener('keydown',(e)=>{
-  if(e.key==='Escape' && document.getElementById('aebCustomBackdrop').style.display!=='none') closeCustomModal();
+  if(e.key!=='Escape') return;
+  if(document.getElementById('aebCustomBackdrop').style.display!=='none') closeCustomModal();
+  if(document.getElementById('aebHelpBackdrop').style.display!=='none') closeHelpModal();
 });
 document.getElementById('aebCopyBest').addEventListener('click',()=>{
   customGenome=cloneGenome(population[0].genome);
@@ -1358,6 +1432,12 @@ document.getElementById('aebInject').addEventListener('click',()=>{
   // generation change could sweep it away just a frame or two after
   // injection, before it ever gets a real lap.
   heatTimer=0;
+
+  // If the sim was running at high speed, the whole heat could finish in a
+  // fraction of a second -- slow down to normal speed so the injected
+  // design actually gets seen racing, not just swept away instantly.
+  speedMult=1;
+  document.querySelectorAll('[data-speed]').forEach(b=>b.classList.toggle('active', b.dataset.speed==='1'));
 
   // Make sure the race is actually running and visible, since neither is
   // guaranteed at the moment of injection.
@@ -1418,11 +1498,14 @@ document.getElementById('aebPause').addEventListener('click',(e)=>{
   paused=!paused;
   e.target.textContent=paused?'▶ 再開':'⏸ 一時停止';
 });
-document.getElementById('aebRoad').addEventListener('click',(e)=>{
-  roadMode = roadMode==='smooth' ? 'bumpy' : 'smooth';
-  e.target.classList.toggle('active', roadMode==='bumpy');
-  e.target.textContent = roadMode==='bumpy' ? '🪨 でこぼこ道 ON' : '🪨 でこぼこ道';
-});
+const ROAD_BUTTONS={smooth:'aebRoadSmooth', bumpy:'aebRoadBumpy', mountain:'aebRoadMountain'};
+function setRoadMode(mode){
+  roadMode=mode;
+  for(const m in ROAD_BUTTONS) document.getElementById(ROAD_BUTTONS[m]).classList.toggle('active', m===mode);
+}
+document.getElementById('aebRoadSmooth').addEventListener('click',()=>setRoadMode('smooth'));
+document.getElementById('aebRoadBumpy').addEventListener('click',()=>setRoadMode('bumpy'));
+document.getElementById('aebRoadMountain').addEventListener('click',()=>setRoadMode('mountain'));
 document.getElementById('aebNext').addEventListener('click',()=>{
   heatTimer=0;
   triggerEvolution();
