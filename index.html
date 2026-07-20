@@ -151,13 +151,25 @@ html,body{margin:0; padding:0; background:#0d1b2e;}
 .aeb-hint{font-family:var(--sans); font-size:10.5px; color:var(--text-muted); margin-left:auto;}
 .aeb-divider{width:1px; align-self:stretch; background:var(--panel-line); margin:2px 4px;}
 .aeb-help-btn{margin-left:auto;}
-.aeb-support-btn{
-  text-decoration:none; display:inline-flex; align-items:center;
-  background:linear-gradient(135deg,#ffe08a,#ffb703); color:#1a1204; font-weight:700; border:none;
-}
-.aeb-support-btn:hover{filter:brightness(1.08); color:#1a1204;}
 .aeb-help-body{display:flex; flex-direction:column; gap:10px;}
 .aeb-help-body p{margin:0; font-family:var(--sans); font-size:13px; line-height:1.6; color:var(--text);}
+.aeb-share-btn{width:100%; margin:8px 0; text-align:center; justify-content:center; font-size:10.5px; padding:6px 10px; opacity:0.85;}
+.aeb-share-btn:hover{opacity:1;}
+.aeb-rank{
+  font-family:var(--mono); font-size:11.5px; color:var(--accent); font-weight:700;
+  margin-top:2px; letter-spacing:.5px;
+}
+.aeb-toast{
+  position:fixed; top:18px; left:50%;
+  transform:translate(-50%,-140%);
+  background:linear-gradient(135deg,#ffe08a,#ffb703);
+  color:#1a1204; font-family:var(--sans); font-weight:700; font-size:14px;
+  padding:12px 22px; border-radius:999px; box-shadow:0 10px 30px rgba(0,0,0,.35);
+  z-index:1000; pointer-events:none;
+  transition:transform .4s cubic-bezier(.34,1.56,.64,1), opacity .4s;
+  opacity:0; white-space:nowrap;
+}
+.aeb-toast.show{transform:translate(-50%,0); opacity:1;}
 .aeb-emph{display:flex; align-items:center; gap:6px;}
 .aeb-emph label{font-family:var(--sans); font-size:11px; color:var(--text); white-space:nowrap;}
 
@@ -335,6 +347,7 @@ html,body{margin:0; padding:0; background:#0d1b2e;}
   .aeb-btn{padding:10px 13px; font-size:12px;} /* bigger tap targets */
   .aeb-weights{padding:8px 10px; gap:8px;}
   .aeb-hint{width:100%; margin-left:0; order:99;}
+  .aeb-help-btn{margin-left:0;}
   .aeb-slider{width:84px;}
   .aeb-canvaswrap{height:340px;}
   .aeb-side{flex-direction:column;}
@@ -359,6 +372,8 @@ html,body{margin:0; padding:0; background:#0d1b2e;}
 <body>
 
 <div class="aeb-root">
+  <div class="aeb-toast" id="aebToast"></div>
+
   <div class="aeb-topbar">
     <div class="aeb-brand">AI EVOLUTION BIKE <span>／ 遺伝的アルゴリズムで自転車を進化させる</span></div>
     <div class="aeb-stat">GEN <b id="aebGen">1</b></div>
@@ -368,9 +383,9 @@ html,body{margin:0; padding:0; background:#0d1b2e;}
     <div class="aeb-stat">突然変異率 <b id="aebMutRate">8%</b></div>
     <div class="aeb-stat">FPS <b id="aebFps">60</b></div>
     <button class="aeb-btn aeb-help-btn" id="aebHelpToggle">❓ 使い方</button>
-    <!-- ▼▼ Stripe決済リンクに差し替えてください（例: https://buy.stripe.com/xxxxxxxx） ▼▼ -->
-    <a class="aeb-btn aeb-support-btn" href="https://buy.stripe.com/6oU3co5Op7iz11y8n45sA00" target="_blank" rel="noopener noreferrer">💛 開発者を応援する</a>
-    <!-- ▲▲ ここまで ▲▲ -->
+    <!-- ▼ Stripe決済リンクに差し替えてください（例: https://buy.stripe.com/xxxxxxxx） ▼ -->
+    <a class="aeb-btn" href="https://buy.stripe.com/6oU3co5Op7iz11y8n45sA00" target="_blank" rel="noopener noreferrer">♡ 応援する</a>
+    <!-- ▲ ここまで ▲ -->
   </div>
 
   <div class="aeb-weights">
@@ -413,13 +428,18 @@ html,body{margin:0; padding:0; background:#0d1b2e;}
     <span class="lbl">突然変異率</span>
     <input type="range" id="aebMutRateSlider" min="0" max="40" value="8" class="aeb-slider">
     <span class="aeb-sliderval" id="aebMutRateVal">8%</span>
-    <span class="lbl" style="margin-left:14px;">変異の強さ</span>
+    <span class="aeb-hint">形が暴走する時はここを下げてみてください</span>
+  </div>
+  <div class="aeb-weights">
+    <span class="lbl">変異の強さ</span>
     <input type="range" id="aebMutStrengthSlider" min="10" max="300" value="100" class="aeb-slider">
     <span class="aeb-sliderval" id="aebMutStrengthVal">1.0×</span>
-    <span class="lbl" style="margin-left:14px;">生存率（上位を残す割合）</span>
+  </div>
+  <div class="aeb-weights">
+    <span class="lbl">生存率</span>
     <input type="range" id="aebSurviveSlider" min="10" max="60" value="28" class="aeb-slider">
     <span class="aeb-sliderval" id="aebSurviveVal">28%</span>
-    <span class="aeb-hint">形が暴走する時は変異を下げてみてください</span>
+    <span class="aeb-hint">上位何%を親として残すか</span>
   </div>
 
   <div class="aeb-main">
@@ -439,9 +459,11 @@ html,body{margin:0; padding:0; background:#0d1b2e;}
         <div class="h">Best Individual</div>
         <canvas class="aeb-bestcanvas" id="aebBestCanvas"></canvas>
         <div class="aeb-scoreline"><span class="val" id="aebBestScoreBig">0.0</span><span class="of">/ 100</span></div>
+        <div class="aeb-rank" id="aebRank">🔧 見習い設計者</div>
         <div class="aeb-genlist">
           <div>登場世代</div><div class="v" id="aebBestGen">-</div>
         </div>
+        <button class="aeb-btn aeb-share-btn" id="aebShare">📤 結果をシェア</button>
         <div class="aeb-bars" id="aebBreakdown"></div>
       </div>
       <div class="aeb-panel">
@@ -763,6 +785,7 @@ function initPopulation(){
   generation=1;
   bestEver=null;
   bestEverGen=1;
+  lastRankTitle=null;
   evaluateAll();
 }
 
@@ -786,7 +809,34 @@ function evaluateAll(){
   if(!bestEver || top.score>bestEver.score){
     bestEver={genome:cloneGenome(top.genome), score:top.score, subs:top.subs};
     bestEverGen=generation;
+    const rank=getRank(bestEver.score);
+    if(lastRankTitle && rank.title!==lastRankTitle){
+      showToast(`${rank.emoji} 称号アップ！「${rank.title}」になりました`);
+    }
+    lastRankTitle=rank.title;
   }
+}
+
+const RANKS=[
+  {min:0,  title:'見習い設計者',        emoji:'🔧'},
+  {min:40, title:'一人前デザイナー',    emoji:'🛠️'},
+  {min:60, title:'敏腕エンジニア',      emoji:'⚙️'},
+  {min:80, title:'天才ビルダー',        emoji:'✨'},
+  {min:95, title:'伝説のフレームビルダー',emoji:'👑'},
+];
+function getRank(score){
+  let r=RANKS[0];
+  for(const x of RANKS) if(score>=x.min) r=x;
+  return r;
+}
+let lastRankTitle=null;
+let toastTimer=null;
+function showToast(text){
+  const el=document.getElementById('aebToast');
+  el.textContent=text;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>{ el.classList.remove('show'); }, 2600);
 }
 
 function crossover(pa,pb){
@@ -1161,6 +1211,8 @@ function renderBestPanel(){
 
   document.getElementById('aebBestScoreBig').textContent=b.score.toFixed(1);
   document.getElementById('aebBestGen').textContent='G'+bestEverGen;
+  const curRank=getRank(bestEver?bestEver.score:0);
+  document.getElementById('aebRank').textContent=`${curRank.emoji} ${curRank.title}`;
 
   const bd=document.getElementById('aebBreakdown');
   bd.innerHTML='';
@@ -1515,6 +1567,38 @@ document.getElementById('aebReset').addEventListener('click',()=>{
   initPopulation();
   updateTopStats();
   pushTreeSnapshot();
+});
+
+function describeBuild(){
+  const e=emphasis;
+  const top=Object.entries({
+    'スピード重視のレーサー系':e.speed,
+    'のんびり快適系':e.comfort,
+    'ゴツいオフロード系':e.toughness,
+    '軽量ヒルクライム系':e.lightness,
+  }).sort((a,b)=>b[1]-a[1])[0][0];
+  const terrainLabel= roadMode==='mountain'?'山道':roadMode==='bumpy'?'でこぼこ道':'舗装路';
+  return {top, terrainLabel};
+}
+document.getElementById('aebShare').addEventListener('click', async ()=>{
+  const b=population[0];
+  if(!b) return;
+  const {top, terrainLabel}=describeBuild();
+  const text=`🚴 AI Evolution Bikeで自転車を進化させたら「${top}」になった！\nGeneration ${generation}・スコア ${b.score.toFixed(1)}/100（${terrainLabel}）`;
+  const shareBtn=document.getElementById('aebShare');
+  const orig=shareBtn.textContent;
+  if(navigator.share){
+    try{
+      await navigator.share({title:'AI Evolution Bike', text, url:location.href});
+      return;
+    }catch(err){
+      if(err && err.name==='AbortError') return; // user cancelled, do nothing
+    }
+  }
+  // LINE's share endpoint -- opens the LINE app (or line.me) with the text prefilled
+  window.open('https://line.me/R/msg/text/?'+encodeURIComponent(text+'\n'+location.href), '_blank', 'noopener');
+  shareBtn.textContent='LINEで開いています…';
+  setTimeout(()=>{shareBtn.textContent=orig;},2200);
 });
 
 // ---------- boot ----------
